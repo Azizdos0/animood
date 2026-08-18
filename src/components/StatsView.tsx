@@ -14,6 +14,9 @@ import { StatTile } from "@/components/stats/StatTile";
 import { BarList } from "@/components/stats/BarList";
 import { ScoreHistogram } from "@/components/stats/ScoreHistogram";
 import { AffinityBars } from "@/components/stats/AffinityBars";
+import { ShareCard } from "@/components/stats/ShareCard";
+import { buildStatsCardData } from "@/lib/stats/card";
+import { buildStatsCardSvg } from "@/lib/stats/card-svg";
 
 type Status = "loading" | "error" | "ready";
 
@@ -31,6 +34,7 @@ export function StatsView() {
   const ids = Object.keys(store.entries).map(Number);
   const [media, setMedia] = useState<Record<number, Media>>({});
   const [status, setStatus] = useState<Status>("loading");
+  const [showCard, setShowCard] = useState(false);
 
   const listKey = ids.join(",");
   useEffect(() => {
@@ -98,6 +102,15 @@ export function StatsView() {
       ? `${totals.anime} anime · ${totals.manga} manga`
       : "in your list";
 
+  // Card uses list-level titles/mean/completion + media-based episodes/minutes.
+  const cardSvg = buildStatsCardSvg(
+    buildStatsCardData(
+      { ...totals, titles: list.titles, completionRate: list.completionRate, meanScore: list.meanScore },
+      genres,
+      affinity.positive.map((t) => t.name)
+    )
+  );
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
@@ -120,6 +133,23 @@ export function StatsView() {
       <Section title="Your taste profile">
         <p className="-mt-1 mb-3 text-xs text-muted-foreground">The tag affinities that power your recommendations.</p>
         <AffinityBars positive={affinity.positive} negative={affinity.negative} />
+      </Section>
+
+      <Section title="Share your stats">
+        {showCard ? (
+          <ShareCard svg={cardSvg} />
+        ) : (
+          <div className="flex flex-col items-start gap-3">
+            <p className="-mt-1 text-xs text-muted-foreground">Generate a shareable image of your taste and stats.</p>
+            <button
+              type="button"
+              onClick={() => setShowCard(true)}
+              className="rounded-xl bg-gradient-to-r from-primary-strong to-accent px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition-transform hover:scale-[1.03]"
+            >
+              Create share card
+            </button>
+          </div>
+        )}
       </Section>
     </div>
   );

@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useListStore } from "@/lib/list/reactive";
 import type { Media } from "@/lib/anilist/types";
+import type { ListEntry } from "@/lib/list/schema";
 import type { StatEntry } from "@/lib/stats/types";
-import { scoreDistribution, statusBreakdown, computeTotals } from "@/lib/stats/compute";
+import { scoreDistribution, statusBreakdown, computeTotals, listTotals } from "@/lib/stats/compute";
 import { genreBreakdown, topTags, formatBreakdown, tasteAffinitySummary } from "@/lib/stats/breakdowns";
 import { formatMinutes, formatNumber } from "@/lib/stats/format";
 import { STATUS_LABELS } from "@/lib/list/labels";
@@ -72,16 +73,23 @@ export function StatsView() {
     );
   }
 
+  // Full list-level entries (every id in the store), independent of whether
+  // `/api/media` returned metadata for it. Titles/status/completion/score
+  // stats are derived from this so they never undercount vs. My List.
+  const listEntries: ListEntry[] = Object.values(store.entries);
+
+  // Metadata-dependent subset — only ids the media API actually returned.
   const entries: StatEntry[] = ids
     .filter((id) => media[id])
     .map((id) => ({ media: media[id], entry: store.entries[id] }));
 
+  const list = listTotals(listEntries);
   const totals = computeTotals(entries);
-  const dist = scoreDistribution(entries);
+  const dist = scoreDistribution(listEntries);
   const genres = genreBreakdown(entries).slice(0, 10);
   const tags = topTags(entries, 10);
   const formats = formatBreakdown(entries);
-  const statuses = statusBreakdown(entries)
+  const statuses = statusBreakdown(listEntries)
     .filter((s) => s.count > 0)
     .map((s) => ({ name: STATUS_LABELS[s.status], count: s.count }));
   const affinity = tasteAffinitySummary(entries);
@@ -89,11 +97,11 @@ export function StatsView() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-        <StatTile label="Titles" value={formatNumber(totals.titles)} sub={`${totals.anime} anime · ${totals.manga} manga`} />
+        <StatTile label="Titles" value={formatNumber(list.titles)} sub={`${totals.anime} anime · ${totals.manga} manga`} />
         <StatTile label="Episodes" value={formatNumber(totals.episodes)} sub="watched" />
         <StatTile label="Time" value={formatMinutes(totals.minutes)} sub="of anime" />
-        <StatTile label="Mean score" value={totals.meanScore ? totals.meanScore.toFixed(1) : "—"} sub="your average" />
-        <StatTile label="Completion" value={`${Math.round(totals.completionRate * 100)}%`} sub="of your list" />
+        <StatTile label="Mean score" value={list.meanScore ? list.meanScore.toFixed(1) : "—"} sub="your average" />
+        <StatTile label="Completion" value={`${Math.round(list.completionRate * 100)}%`} sub="of your list" />
       </div>
 
       <Section title="Score distribution"><ScoreHistogram data={dist} /></Section>

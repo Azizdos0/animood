@@ -64,3 +64,11 @@ export const RECOMMENDATIONS_QUERY = `
     }
   }
 `;
+
+export const MEDIA_BY_IDS_QUERY = `
+  query MediaByIds($ids: [Int], $perPage: Int) {
+    Page(page: 1, perPage: $perPage) {
+      media(id_in: $ids) { ${MEDIA_FIELDS} }
+    }
+  }
+`;

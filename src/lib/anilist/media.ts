@@ -1,6 +1,6 @@
 import { anilistRequest } from "./client";
 import {
-  MEDIA_BY_ID_QUERY, RECOMMENDATIONS_QUERY, SEARCH_QUERY, TRENDING_QUERY,
+  MEDIA_BY_ID_QUERY, MEDIA_BY_IDS_QUERY, RECOMMENDATIONS_QUERY, SEARCH_QUERY, TRENDING_QUERY,
 } from "./queries";
 import type {
   Media, MediaFormat, MediaRecommendation, MediaStub, MediaType,
@@ -104,4 +104,20 @@ export async function getRecommendationsFor(
       rating: n.rating,
       media: mapStub(n.mediaRecommendation!),
     }));
+}
+
+export async function getMediaByIds(ids: number[]): Promise<Media[]> {
+  if (ids.length === 0) return [];
+  const chunks: number[][] = [];
+  for (let i = 0; i < ids.length; i += 50) chunks.push(ids.slice(i, i + 50));
+
+  const results = await Promise.all(
+    chunks.map((chunk) =>
+      anilistRequest<{ Page: { media: RawMedia[] } }>(MEDIA_BY_IDS_QUERY, {
+        ids: chunk,
+        perPage: 50,
+      })
+    )
+  );
+  return results.flatMap((r) => r.Page.media.map(mapMedia));
 }

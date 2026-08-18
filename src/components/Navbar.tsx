@@ -31,6 +31,12 @@ export function Navbar() {
           >
             My List
           </Link>
+          <Link
+            href="/stats"
+            className="rounded-full px-3 py-1.5 text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
+          >
+            Stats
+          </Link>
         </div>
       </nav>
     </header>

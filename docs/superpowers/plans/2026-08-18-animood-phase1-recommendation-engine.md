@@ -87,12 +87,21 @@ describe("buildTasteProfile", () => {
   });
 
   it("applies shrinkage so a single-sample tag is pulled toward zero", () => {
-    const many: RatedTitle[] = Array.from({ length: 6 }, (_, i) => ({
-      media: media(i + 1, [[10, "Common", 100]]), score: 9, status: "completed" as const,
+    // Common (5x) and Rare (1x) share the SAME raw signal (all scored 10);
+    // two low-scored filler titles pull the mean below 10 so the centered
+    // signal is non-zero. Equal raw affinity, but the smaller-sample tag
+    // shrinks harder toward zero.
+    const common: RatedTitle[] = Array.from({ length: 5 }, (_, i) => ({
+      media: media(i + 1, [[10, "Common", 100]]), score: 10, status: "completed" as const,
     }));
-    const one: RatedTitle = { media: media(99, [[20, "Rare", 100]]), score: 9, status: "completed" };
-    const p = buildTasteProfile([...many, one]);
-    // same raw signal, but Rare (count 1) shrinks more than Common (count 6)
+    const rare: RatedTitle = { media: media(50, [[20, "Rare", 100]]), score: 10, status: "completed" };
+    const fillers: RatedTitle[] = Array.from({ length: 2 }, (_, i) => ({
+      media: media(80 + i, [[30, "Filler", 100]]), score: 3, status: "completed" as const,
+    }));
+    const p = buildTasteProfile([...common, rare, ...fillers]);
+    expect(p.tags[10].affinity).toBeGreaterThan(0);
+    expect(p.tags[20].affinity).toBeGreaterThan(0);
+    // same raw signal, but Rare (count 1) shrinks more than Common (count 5)
     expect(Math.abs(p.tags[20].affinity)).toBeLessThan(Math.abs(p.tags[10].affinity));
   });
 

@@ -1,6 +1,7 @@
 import { anilistRequest } from "./client";
 import {
-  MEDIA_BY_ID_QUERY, MEDIA_BY_IDS_QUERY, RECOMMENDATIONS_QUERY, SEARCH_QUERY, TRENDING_QUERY,
+  MEDIA_BY_ID_QUERY, MEDIA_BY_IDS_QUERY, MEDIA_BY_MAL_IDS_QUERY,
+  RECOMMENDATIONS_QUERY, SEARCH_QUERY, TRENDING_QUERY,
 } from "./queries";
 import type {
   Media, MediaFormat, MediaRecommendation, MediaStub, MediaType,
@@ -120,4 +121,39 @@ export async function getMediaByIds(ids: number[]): Promise<Media[]> {
     )
   );
   return results.flatMap((r) => r.Page.media.map(mapMedia));
+}
+
+export interface MalMediaStub {
+  id: number;
+  idMal: number | null;
+  title: string;
+  coverImage: string | null;
+  format: MediaFormat | null;
+}
+
+export async function getMediaByMalIds(
+  malIds: number[],
+  type: MediaType
+): Promise<MalMediaStub[]> {
+  if (malIds.length === 0) return [];
+  const chunks: number[][] = [];
+  for (let i = 0; i < malIds.length; i += 50) chunks.push(malIds.slice(i, i + 50));
+
+  const results = await Promise.all(
+    chunks.map((chunk) =>
+      anilistRequest<{ Page: { media: (RawStub & { idMal: number | null })[] } }>(
+        MEDIA_BY_MAL_IDS_QUERY,
+        { ids: chunk, type, perPage: 50 }
+      )
+    )
+  );
+  return results.flatMap((r) =>
+    r.Page.media.map((m) => ({
+      id: m.id,
+      idMal: m.idMal,
+      title: pickTitle(m.title),
+      coverImage: m.coverImage?.large ?? null,
+      format: m.format,
+    }))
+  );
 }

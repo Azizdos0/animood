@@ -46,14 +46,22 @@ export function MyListView() {
       <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border py-20 text-center">
         <p className="text-base font-medium">Your list is empty.</p>
         <p className="mt-1 text-sm text-muted-foreground">
-          Browse titles and add them to get started.
+          Browse titles and add them, or import your list from MyAnimeList.
         </p>
-        <Link
-          href="/search"
-          className="mt-5 rounded-xl bg-gradient-to-r from-primary-strong to-accent px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition-transform hover:scale-[1.03]"
-        >
-          Explore titles
-        </Link>
+        <div className="mt-5 flex flex-wrap justify-center gap-3">
+          <Link
+            href="/search"
+            className="rounded-xl bg-gradient-to-r from-primary-strong to-accent px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition-transform hover:scale-[1.03]"
+          >
+            Explore titles
+          </Link>
+          <Link
+            href="/import"
+            className="rounded-xl border border-border-strong bg-surface px-5 py-2.5 text-sm font-semibold transition-colors hover:bg-surface-hover"
+          >
+            Import from MyAnimeList
+          </Link>
+        </div>
       </div>
     );
   }

@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import { emptyStore, type ListEntry, type ListStoreV1 } from "./schema";
-import { loadStore, upsertEntry, removeEntry } from "./storage";
+import { loadStore, upsertEntry, removeEntry, bulkUpsert, type BulkImportItem } from "./storage";
 
 let snapshot: ListStoreV1 | null = null;
 const listeners = new Set<() => void>();
@@ -43,6 +43,11 @@ export function setEntry(
 
 export function deleteEntry(mediaId: number): void {
   snapshot = removeEntry(mediaId);
+  emit();
+}
+
+export function importEntries(items: BulkImportItem[]): void {
+  snapshot = bulkUpsert(items);
   emit();
 }
 

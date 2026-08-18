@@ -73,6 +73,34 @@ export function removeEntry(mediaId: number): ListStoreV1 {
   return next;
 }
 
+export interface BulkImportItem {
+  mediaId: number;
+  status: ListEntry["status"];
+  score: number | null;
+  progress: number;
+}
+
+/**
+ * Merge many entries in a single load/save. Imported items overwrite any
+ * existing entry for the same media id. Returns the new store.
+ */
+export function bulkUpsert(items: BulkImportItem[]): ListStoreV1 {
+  const store = loadStore();
+  const now = new Date().toISOString();
+  const entries = { ...store.entries };
+  for (const item of items) {
+    entries[item.mediaId] = {
+      status: item.status,
+      score: clampScore(item.score),
+      progress: clampProgress(item.progress),
+      updatedAt: now,
+    };
+  }
+  const next: ListStoreV1 = { version: store.version, entries };
+  saveStore(next);
+  return next;
+}
+
 export function clearAll(): void {
   saveStore(emptyStore());
 }

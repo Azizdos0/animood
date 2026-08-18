@@ -72,3 +72,17 @@ export const MEDIA_BY_IDS_QUERY = `
     }
   }
 `;
+
+export const MEDIA_BY_MAL_IDS_QUERY = `
+  query MediaByMalIds($ids: [Int], $type: MediaType, $perPage: Int) {
+    Page(page: 1, perPage: $perPage) {
+      media(idMal_in: $ids, type: $type) {
+        id
+        idMal
+        title { romaji english native }
+        coverImage { large }
+        format
+      }
+    }
+  }
+`;

@@ -3,6 +3,7 @@ import { getMediaById } from "@/lib/anilist/media";
 import { relatedByType } from "@/lib/anilist/relations";
 import { ListEditor } from "@/components/ListEditor";
 import { MediaCard } from "@/components/MediaCard";
+import { StarIcon } from "@/components/icons";
 
 export default async function MediaDetailPage({
   params,
@@ -71,8 +72,8 @@ export default async function MediaDetailPage({
               </h1>
               <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                 {media.averageScore ? (
-                  <span className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-1 font-medium text-foreground">
-                    <span className="text-star">★</span> {media.averageScore}
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 font-medium text-foreground">
+                    <StarIcon size={14} filled className="text-star" /> {media.averageScore}
                   </span>
                 ) : null}
                 {meta.map((m) => (

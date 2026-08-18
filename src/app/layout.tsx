@@ -27,10 +27,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full flex flex-col">
         <Navbar />
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
+        <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-8 pb-28 sm:px-6 sm:pb-8">
           {children}
         </main>
-        <footer className="border-t border-border py-6 text-center text-xs text-muted-foreground">
+        <footer className="border-t border-border py-6 pb-28 text-center text-xs text-muted-foreground sm:pb-6">
           Animood — data from AniList. Your list lives in this browser.
         </footer>
       </body>

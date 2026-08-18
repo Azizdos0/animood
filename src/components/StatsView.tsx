@@ -17,6 +17,8 @@ import { AffinityBars } from "@/components/stats/AffinityBars";
 import { ShareCard } from "@/components/stats/ShareCard";
 import { buildStatsCardData } from "@/lib/stats/card";
 import { buildStatsCardSvg } from "@/lib/stats/card-svg";
+import { TileSkeleton } from "@/components/Skeleton";
+import { ChartIcon, SearchIcon } from "@/components/icons";
 
 type Status = "loading" | "error" | "ready";
 
@@ -60,15 +62,28 @@ export function StatsView() {
   if (ids.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border py-20 text-center">
-        <p className="text-base font-medium">No stats yet.</p>
+        <ChartIcon size={40} className="text-muted-foreground/50" />
+        <p className="mt-4 text-base font-medium">No stats yet.</p>
         <p className="mt-1 text-sm text-muted-foreground">Add titles to your list to see your habits.</p>
-        <Link href="/search" className="mt-5 rounded-xl bg-gradient-to-r from-primary-strong to-accent px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition-transform hover:scale-[1.03]">
-          Find titles
+        <Link href="/search" className="mt-5 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary-strong to-accent px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition-transform hover:scale-[1.03]">
+          <SearchIcon size={16} /> Find titles
         </Link>
       </div>
     );
   }
-  if (status === "loading") return <p className="py-16 text-center text-sm text-muted-foreground">Crunching your stats…</p>;
+  if (status === "loading") {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+          {Array.from({ length: 5 }).map((_, i) => <TileSkeleton key={i} />)}
+        </div>
+        <div className="skeleton h-44 rounded-2xl" />
+        <div className="grid gap-6 md:grid-cols-2">
+          {Array.from({ length: 4 }).map((_, i) => <div key={i} className="skeleton h-48 rounded-2xl" />)}
+        </div>
+      </div>
+    );
+  }
   if (status === "error") {
     return (
       <p className="rounded-2xl border border-dashed border-border py-12 text-center text-sm text-muted-foreground">

@@ -36,10 +36,16 @@ export async function POST(request: Request): Promise<Response> {
       })
       .filter((x): x is RatedTitle => x !== null);
 
-    // Mean for source-signal weighting of community recs.
+    // Mean for source-signal weighting of community recs. Uses the same basis
+    // as buildTasteProfile (the successfully-fetched `rated` set), not the
+    // raw `list` input, so the two means stay consistent even when some
+    // media fetches miss.
+    const ratedScores = rated
+      .map((r) => r.score)
+      .filter((s): s is number => s !== null);
     const mean =
-      scored.length >= 2
-        ? scored.reduce((s, e) => s + (e.score as number), 0) / scored.length
+      ratedScores.length >= 2
+        ? ratedScores.reduce((s, v) => s + v, 0) / ratedScores.length
         : NEUTRAL_MEAN;
 
     const topSources = [...rated]

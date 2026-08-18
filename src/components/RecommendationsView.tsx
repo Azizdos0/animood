@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useListStore } from "@/lib/list/reactive";
+import type { ListEntry } from "@/lib/list/schema";
 import { MediaCard } from "@/components/MediaCard";
 import { presentRecommendations } from "@/lib/recommend/present";
 import type { ScoredCandidate } from "@/lib/recommend/scoring";
@@ -12,9 +13,21 @@ type Status = "idle" | "loading" | "error" | "cold" | "ready";
 
 const GENRE_OPTIONS = ["Ecchi", "Horror", "Hentai", "Sports", "Mahou Shoujo", "Kids"];
 
+/**
+ * Pure key derivation for the refetch effect: includes id, score, and status
+ * for every entry so a re-score or status change (not just membership)
+ * invalidates the cached recommendations. Exported for testability.
+ */
+export function buildListKey(entries: Record<number, ListEntry>): string {
+  return Object.entries(entries)
+    .map(([id, e]) => `${id}:${e.score ?? ""}:${e.status}`)
+    .sort()
+    .join(",");
+}
+
 export function RecommendationsView() {
   const store = useListStore();
-  const listKey = Object.keys(store.entries).join(",");
+  const listKey = buildListKey(store.entries);
 
   const [pool, setPool] = useState<ScoredCandidate[]>([]);
   const [status, setStatus] = useState<Status>("idle");

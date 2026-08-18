@@ -20,6 +20,12 @@ export function Navbar() {
             Search
           </Link>
           <Link
+            href="/recommendations"
+            className="rounded-full px-3 py-1.5 text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
+          >
+            For You
+          </Link>
+          <Link
             href="/my-list"
             className="rounded-full px-3 py-1.5 text-muted-foreground transition-colors hover:bg-surface-hover hover:text-foreground"
           >

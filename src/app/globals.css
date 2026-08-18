@@ -1,26 +1,148 @@
 @import "tailwindcss";
 
+/*
+  Animood — "Modern Dark / Cinema" design system.
+  Dark is the primary experience (delivered by default); an explicit light
+  system preference gets a clean light variant.
+*/
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Dark-primary palette (default) */
+  --background: #0b1020;
+  --surface: #131a30;
+  --surface-hover: #1b2440;
+  --foreground: #f5f7ff;
+  --muted-foreground: #98a2c0;
+  --primary: #818cf8;        /* indigo-400, reads bright on dark */
+  --primary-strong: #6366f1; /* indigo-500 */
+  --accent: #a855f7;         /* violet-500 */
+  --on-primary: #0b1020;
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.16);
+  --ring: #818cf8;
+  --destructive: #f43f5e;
+  --star: #fbbf24;
+
+  /* Ambient glow tint (visible mainly on dark) */
+  --glow-1: rgba(99, 102, 241, 0.20);
+  --glow-2: rgba(168, 85, 247, 0.16);
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --background: #f6f7fb;
+    --surface: #ffffff;
+    --surface-hover: #f1f3fa;
+    --foreground: #101426;
+    --muted-foreground: #5b6478;
+    --primary: #4f46e5;
+    --primary-strong: #4338ca;
+    --accent: #7c3aed;
+    --on-primary: #ffffff;
+    --border: rgba(15, 23, 42, 0.10);
+    --border-strong: rgba(15, 23, 42, 0.16);
+    --ring: #4f46e5;
+    --destructive: #e11d48;
+    --star: #d97706;
+    --glow-1: rgba(99, 102, 241, 0.10);
+    --glow-2: rgba(168, 85, 247, 0.08);
+  }
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-strong: var(--primary-strong);
+  --color-accent: var(--accent);
+  --color-on-primary: var(--on-primary);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+  --color-star: var(--star);
+  --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  html { color-scheme: light; }
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Ambient cinematic glow fixed behind all content */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(60rem 60rem at 15% -10%, var(--glow-1), transparent 60%),
+    radial-gradient(50rem 50rem at 100% 0%, var(--glow-2), transparent 55%);
+}
+
+::selection {
+  background: color-mix(in oklab, var(--primary) 35%, transparent);
+  color: var(--foreground);
+}
+
+/* Focus visibility for keyboard nav */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Custom scrollbar (dark-friendly) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+/* --- Motion: staggered fade-up reveal --- */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.reveal {
+  animation: fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Per-item stagger for grids/rows: .stagger > * gets an increasing delay */
+.stagger > * {
+  animation: fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.stagger > *:nth-child(1)  { animation-delay: 0.02s; }
+.stagger > *:nth-child(2)  { animation-delay: 0.06s; }
+.stagger > *:nth-child(3)  { animation-delay: 0.10s; }
+.stagger > *:nth-child(4)  { animation-delay: 0.14s; }
+.stagger > *:nth-child(5)  { animation-delay: 0.18s; }
+.stagger > *:nth-child(6)  { animation-delay: 0.22s; }
+.stagger > *:nth-child(7)  { animation-delay: 0.26s; }
+.stagger > *:nth-child(8)  { animation-delay: 0.30s; }
+.stagger > *:nth-child(9)  { animation-delay: 0.34s; }
+.stagger > *:nth-child(10) { animation-delay: 0.38s; }
+.stagger > *:nth-child(11) { animation-delay: 0.42s; }
+.stagger > *:nth-child(12) { animation-delay: 0.46s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .stagger > * {
+    animation: none;
+  }
 }

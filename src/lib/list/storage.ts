@@ -1,5 +1,5 @@
 import {
-  emptyStore, isValidStore, type ListEntry, type ListStoreV1,
+  emptyStore, sanitizeStore, type ListEntry, type ListStoreV1,
 } from "./schema";
 
 export const LIST_STORAGE_KEY = "animood.list.v1";
@@ -12,7 +12,7 @@ export function loadStore(): ListStoreV1 {
   if (!raw) return emptyStore();
   try {
     const parsed: unknown = JSON.parse(raw);
-    return isValidStore(parsed) ? parsed : emptyStore();
+    return sanitizeStore(parsed);
   } catch {
     return emptyStore();
   }
@@ -20,11 +20,26 @@ export function loadStore(): ListStoreV1 {
 
 export function saveStore(store: ListStoreV1): void {
   if (!hasWindow()) return;
-  window.localStorage.setItem(LIST_STORAGE_KEY, JSON.stringify(store));
+  try {
+    window.localStorage.setItem(LIST_STORAGE_KEY, JSON.stringify(store));
+  } catch (err) {
+    // QuotaExceededError, Safari private-mode, etc. — never let a write crash the caller.
+    console.warn("animood: failed to persist list store", err);
+  }
 }
 
 export function getEntry(mediaId: number): ListEntry | null {
   return loadStore().entries[mediaId] ?? null;
+}
+
+function clampScore(score: number | null): number | null {
+  if (score === null || !Number.isFinite(score)) return null;
+  return Math.round(Math.min(10, Math.max(1, score)));
+}
+
+function clampProgress(progress: number): number {
+  if (!Number.isFinite(progress)) return 0;
+  return Math.max(0, Math.round(progress));
 }
 
 export function upsertEntry(
@@ -33,10 +48,12 @@ export function upsertEntry(
 ): ListStoreV1 {
   const store = loadStore();
   const existing = store.entries[mediaId];
+  const rawScore = patch.score !== undefined ? patch.score : existing?.score ?? null;
+  const rawProgress = patch.progress ?? existing?.progress ?? 0;
   const merged: ListEntry = {
     status: patch.status ?? existing?.status ?? "planning",
-    score: patch.score !== undefined ? patch.score : existing?.score ?? null,
-    progress: patch.progress ?? existing?.progress ?? 0,
+    score: clampScore(rawScore),
+    progress: clampProgress(rawProgress),
     updatedAt: new Date().toISOString(),
   };
   const next: ListStoreV1 = {

@@ -37,10 +37,19 @@ describe("anilistRequest", () => {
   });
 
   it("throws AniListError after exhausting retries", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(mockFetchOnce(500, {}));
-    vi.stubGlobal("fetch", fetchMock);
+    vi.useFakeTimers();
+    try {
+      const fetchMock = vi.fn().mockResolvedValue(mockFetchOnce(500, {}));
+      vi.stubGlobal("fetch", fetchMock);
 
-    await expect(anilistRequest("q", {}, { maxRetries: 1 })).rejects.toBeInstanceOf(AniListError);
+      const promise = anilistRequest("q", {}, { maxRetries: 1 });
+      const assertion = expect(promise).rejects.toBeInstanceOf(AniListError);
+      await vi.runAllTimersAsync();
+      await assertion;
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("throws AniListError when the GraphQL response contains errors", async () => {
@@ -50,5 +59,39 @@ describe("anilistRequest", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(anilistRequest("q", {})).rejects.toThrow("bad query");
+  });
+
+  it("wraps a network-level fetch rejection as AniListError once retries are exhausted", async () => {
+    vi.useFakeTimers();
+    try {
+      const fetchMock = vi.fn().mockRejectedValue(new TypeError("Failed to fetch"));
+      vi.stubGlobal("fetch", fetchMock);
+
+      const promise = anilistRequest("q", {}, { maxRetries: 2 });
+      const assertion = expect(promise).rejects.toBeInstanceOf(AniListError);
+      await vi.runAllTimersAsync();
+      await assertion;
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("retries after a transient network rejection then succeeds", async () => {
+    vi.useFakeTimers();
+    try {
+      const fetchMock = vi.fn()
+        .mockRejectedValueOnce(new TypeError("Failed to fetch"))
+        .mockResolvedValueOnce(mockFetchOnce(200, { data: { ok: true } }));
+      vi.stubGlobal("fetch", fetchMock);
+
+      const promise = anilistRequest<{ ok: boolean }>("q", {}, { maxRetries: 2 });
+      const assertion = expect(promise).resolves.toEqual({ ok: true });
+      await vi.runAllTimersAsync();
+      await assertion;
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

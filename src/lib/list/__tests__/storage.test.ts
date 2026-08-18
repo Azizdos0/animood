@@ -1,4 +1,6 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import {
+  describe, it, expect, beforeEach, afterEach, vi,
+} from "vitest";
 import {
   LIST_STORAGE_KEY, loadStore, getEntry, upsertEntry, removeEntry, clearAll,
 } from "@/lib/list/storage";
@@ -56,5 +58,52 @@ describe("list storage", () => {
   it("persists across a fresh load", () => {
     upsertEntry(7, { status: "completed", score: 8, progress: 12 });
     expect(loadStore().entries[7].score).toBe(8);
+  });
+
+  describe("write robustness", () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it("upsertEntry does not throw when localStorage.setItem throws", () => {
+      const spy = vi
+        .spyOn(Object.getPrototypeOf(window.localStorage) as Storage, "setItem")
+        .mockImplementation(() => {
+          throw new DOMException("The quota has been exceeded.", "QuotaExceededError");
+        });
+
+      expect(() => upsertEntry(5, { status: "watching", score: 5, progress: 1 })).not.toThrow();
+
+      spy.mockRestore();
+    });
+
+    it("upsertEntry with an out-of-range score persists a clamped value", () => {
+      upsertEntry(9, { status: "watching", score: 11, progress: 3 });
+      const e = getEntry(9)!;
+      expect(e.score).toBe(10);
+    });
+
+    it("upsertEntry with a negative progress persists a floored value", () => {
+      upsertEntry(10, { status: "watching", score: null, progress: -5 });
+      const e = getEntry(10)!;
+      expect(e.progress).toBe(0);
+    });
+  });
+
+  it("loadStore keeps valid entries and drops only the invalid ones", () => {
+    localStorage.setItem(
+      LIST_STORAGE_KEY,
+      JSON.stringify({
+        version: 1,
+        entries: {
+          1: { status: "watching", score: 7, progress: 3, updatedAt: "2026-01-01T00:00:00.000Z" },
+          2: { status: "bogus-status", score: 7, progress: 3, updatedAt: "2026-01-01T00:00:00.000Z" },
+        },
+      })
+    );
+    const store = loadStore();
+    expect(store.entries[1]).toBeDefined();
+    expect(store.entries[1].score).toBe(7);
+    expect(store.entries[2]).toBeUndefined();
   });
 });

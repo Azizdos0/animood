@@ -93,11 +93,15 @@ export function StatsView() {
     .filter((s) => s.count > 0)
     .map((s) => ({ name: STATUS_LABELS[s.status], count: s.count }));
   const affinity = tasteAffinitySummary(entries);
+  const titlesSub =
+    totals.anime + totals.manga === list.titles
+      ? `${totals.anime} anime · ${totals.manga} manga`
+      : "in your list";
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-        <StatTile label="Titles" value={formatNumber(list.titles)} sub={`${totals.anime} anime · ${totals.manga} manga`} />
+        <StatTile label="Titles" value={formatNumber(list.titles)} sub={titlesSub} />
         <StatTile label="Episodes" value={formatNumber(totals.episodes)} sub="watched" />
         <StatTile label="Time" value={formatMinutes(totals.minutes)} sub="of anime" />
         <StatTile label="Mean score" value={list.meanScore ? list.meanScore.toFixed(1) : "—"} sub="your average" />

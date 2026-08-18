@@ -146,3 +146,42 @@ body::before {
     animation: none;
   }
 }
+
+/* --- Shimmer skeletons --- */
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in oklab, var(--foreground) 8%, transparent),
+    transparent
+  );
+  animation: shimmer 1.6s infinite;
+}
+
+/* Slow ambient drift for hero glow blobs */
+@keyframes drift {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(24px, -18px); }
+}
+.drift-slow { animation: drift 14s ease-in-out infinite; }
+.drift-slower { animation: drift 20s ease-in-out infinite reverse; }
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after,
+  .drift-slow,
+  .drift-slower { animation: none; }
+}

@@ -1,14 +1,23 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { Navbar } from "@/components/Navbar";
 import { toCardData } from "@/components/MediaRow";
+
+vi.mock("next/navigation", () => ({ usePathname: () => "/" }));
 
 describe("Navbar", () => {
   it("renders the primary nav links", () => {
     render(<Navbar />);
     expect(screen.getByRole("link", { name: /animood/i })).toHaveAttribute("href", "/");
-    expect(screen.getByRole("link", { name: /search/i })).toHaveAttribute("href", "/search");
-    expect(screen.getByRole("link", { name: /my list/i })).toHaveAttribute("href", "/my-list");
+    // Search / My List appear in both the desktop bar and the mobile bottom nav.
+    expect(screen.getAllByRole("link", { name: /search/i })[0]).toHaveAttribute("href", "/search");
+    expect(screen.getAllByRole("link", { name: /my list/i })[0]).toHaveAttribute("href", "/my-list");
+  });
+
+  it("marks the active route with aria-current", () => {
+    render(<Navbar />);
+    // pathname is mocked to "/", so the Home bottom-nav item is current.
+    expect(screen.getAllByRole("link", { name: /home/i })[0]).toHaveAttribute("aria-current", "page");
   });
 });
 

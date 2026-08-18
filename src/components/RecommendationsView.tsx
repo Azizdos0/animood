@@ -8,6 +8,8 @@ import { MediaCard } from "@/components/MediaCard";
 import { presentRecommendations } from "@/lib/recommend/present";
 import type { ScoredCandidate } from "@/lib/recommend/scoring";
 import type { ExclusionFilters } from "@/lib/recommend/filters";
+import { GridSkeleton } from "@/components/Skeleton";
+import { SparklesIcon, SearchIcon } from "@/components/icons";
 
 type Status = "idle" | "loading" | "error" | "cold" | "ready";
 
@@ -74,18 +76,24 @@ export function RecommendationsView() {
   if (status === "cold") {
     return (
       <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border py-20 text-center">
-        <p className="text-base font-medium">Rate a few titles to unlock recommendations.</p>
+        <SparklesIcon size={40} className="text-muted-foreground/50" />
+        <p className="mt-4 text-base font-medium">Rate a few titles to unlock recommendations.</p>
         <p className="mt-1 text-sm text-muted-foreground">
           Add shows you love (and score them) — the engine learns your taste.
         </p>
-        <Link href="/search" className="mt-5 rounded-xl bg-gradient-to-r from-primary-strong to-accent px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition-transform hover:scale-[1.03]">
-          Find titles
+        <Link href="/search" className="mt-5 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary-strong to-accent px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition-transform hover:scale-[1.03]">
+          <SearchIcon size={16} /> Find titles
         </Link>
       </div>
     );
   }
   if (status === "loading" || status === "idle") {
-    return <p className="py-16 text-center text-sm text-muted-foreground">Analyzing your taste…</p>;
+    return (
+      <div className="space-y-4">
+        <p className="text-sm text-muted-foreground">Analyzing your taste…</p>
+        <GridSkeleton count={15} />
+      </div>
+    );
   }
   if (status === "error") {
     return (

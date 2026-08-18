@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { getTrending } from "@/lib/anilist/media";
 import { MediaRow, toCardData } from "@/components/MediaRow";
+import { CompassIcon, BookmarkIcon } from "@/components/icons";
 
 function Hero() {
   return (
     <section className="relative overflow-hidden rounded-3xl border border-border bg-surface/60 px-6 py-12 sm:px-10 sm:py-16">
-      <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-primary/20 blur-3xl" />
-      <div className="absolute -bottom-20 -left-10 h-64 w-64 rounded-full bg-accent/20 blur-3xl" />
+      <div className="drift-slow absolute -right-16 -top-16 h-64 w-64 rounded-full bg-primary/20 blur-3xl" />
+      <div className="drift-slower absolute -bottom-20 -left-10 h-64 w-64 rounded-full bg-accent/20 blur-3xl" />
       <div className="relative max-w-2xl">
         <span className="inline-flex items-center rounded-full border border-border bg-background/50 px-3 py-1 text-xs font-medium text-muted-foreground">
           Track. Discover. Obsess.
@@ -25,15 +26,15 @@ function Hero() {
         <div className="mt-7 flex flex-wrap gap-3">
           <Link
             href="/search"
-            className="rounded-xl bg-gradient-to-r from-primary-strong to-accent px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition-transform hover:scale-[1.03]"
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary-strong to-accent px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition-transform hover:scale-[1.03]"
           >
-            Explore titles
+            <CompassIcon size={17} /> Explore titles
           </Link>
           <Link
             href="/my-list"
-            className="rounded-xl border border-border-strong bg-surface px-5 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-surface-hover"
+            className="inline-flex items-center gap-2 rounded-xl border border-border-strong bg-surface px-5 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-surface-hover"
           >
-            My list
+            <BookmarkIcon size={17} /> My list
           </Link>
         </div>
       </div>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { importEntries } from "@/lib/list/reactive";
 import { STATUS_LABELS } from "@/lib/list/labels";
 import type { ImportEntry } from "@/lib/import/mal";
+import { SparklesIcon } from "@/components/icons";
 
 type Phase = "idle" | "uploading" | "preview" | "importing" | "done" | "error";
 
@@ -75,7 +76,8 @@ export function MalImportView() {
   if (phase === "done") {
     return (
       <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border py-16 text-center">
-        <p className="font-display text-2xl font-extrabold">Imported {importedCount} titles 🎉</p>
+        <SparklesIcon size={40} className="text-accent" />
+        <p className="mt-3 font-display text-2xl font-extrabold">Imported {importedCount} titles</p>
         <p className="mt-1 text-sm text-muted-foreground">Your list and recommendations are ready.</p>
         <div className="mt-5 flex gap-3">
           <Link href="/my-list" className="rounded-xl bg-gradient-to-r from-primary-strong to-accent px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition-transform hover:scale-[1.03]">

@@ -7,6 +7,7 @@ import { groupIdsByStatus } from "@/lib/list/grouping";
 import { LIST_STATUSES } from "@/lib/list/schema";
 import { STATUS_LABELS, STATUS_ACCENTS } from "@/lib/list/labels";
 import { MediaCard, type MediaCardData } from "@/components/MediaCard";
+import { InboxIcon, UploadIcon, CompassIcon } from "@/components/icons";
 
 type FetchStatus = "loading" | "error" | "done";
 
@@ -44,22 +45,23 @@ export function MyListView() {
   if (ids.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border py-20 text-center">
-        <p className="text-base font-medium">Your list is empty.</p>
+        <InboxIcon size={40} className="text-muted-foreground/50" />
+        <p className="mt-4 text-base font-medium">Your list is empty.</p>
         <p className="mt-1 text-sm text-muted-foreground">
           Browse titles and add them, or import your list from MyAnimeList.
         </p>
         <div className="mt-5 flex flex-wrap justify-center gap-3">
           <Link
             href="/search"
-            className="rounded-xl bg-gradient-to-r from-primary-strong to-accent px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition-transform hover:scale-[1.03]"
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary-strong to-accent px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition-transform hover:scale-[1.03]"
           >
-            Explore titles
+            <CompassIcon size={16} /> Explore titles
           </Link>
           <Link
             href="/import"
-            className="rounded-xl border border-border-strong bg-surface px-5 py-2.5 text-sm font-semibold transition-colors hover:bg-surface-hover"
+            className="inline-flex items-center gap-2 rounded-xl border border-border-strong bg-surface px-5 py-2.5 text-sm font-semibold transition-colors hover:bg-surface-hover"
           >
-            Import from MyAnimeList
+            <UploadIcon size={16} /> Import from MyAnimeList
           </Link>
         </div>
       </div>
@@ -95,12 +97,7 @@ export function MyListView() {
                 return <MediaCard key={id} media={cards[id]} />;
               }
               if (status === "loading") {
-                return (
-                  <div
-                    key={id}
-                    className="aspect-[2/3] animate-pulse rounded-xl border border-border bg-surface"
-                  />
-                );
+                return <div key={id} className="skeleton aspect-[2/3] rounded-xl" />;
               }
               return (
                 <Link

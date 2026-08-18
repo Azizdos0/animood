@@ -13,7 +13,16 @@ export default async function MediaDetailPage({
   const mediaId = Number(id);
   if (!Number.isInteger(mediaId)) notFound();
 
-  const media = await getMediaById(mediaId);
+  let media;
+  try {
+    media = await getMediaById(mediaId);
+  } catch {
+    return (
+      <p className="py-12 text-center text-sm opacity-70">
+        Couldn&apos;t load this title right now. Please try again later.
+      </p>
+    );
+  }
   if (!media) notFound();
 
   const sequels = relatedByType(media, "SEQUEL");

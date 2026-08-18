@@ -7,6 +7,8 @@ import { loadStore, upsertEntry, removeEntry } from "./storage";
 let snapshot: ListStoreV1 | null = null;
 const listeners = new Set<() => void>();
 
+const SERVER_SNAPSHOT: ListStoreV1 = Object.freeze(emptyStore());
+
 function current(): ListStoreV1 {
   if (snapshot === null) snapshot = loadStore();
   return snapshot;
@@ -28,7 +30,7 @@ export function getSnapshot(): ListStoreV1 {
 }
 
 export function getServerSnapshot(): ListStoreV1 {
-  return emptyStore();
+  return SERVER_SNAPSHOT;
 }
 
 export function setEntry(

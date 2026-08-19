@@ -2,15 +2,19 @@ import Link from "next/link";
 import { getTrending } from "@/lib/anilist/media";
 import { MediaRow, toCardData } from "@/components/MediaRow";
 import { CompassIcon, BookmarkIcon } from "@/components/icons";
+import { LogoMark } from "@/components/Logo";
 
 function Hero() {
   return (
     <section className="relative overflow-hidden rounded-3xl border border-border bg-surface/60 px-6 py-12 sm:px-10 sm:py-16">
-      <div className="drift-slow absolute -right-16 -top-16 h-64 w-64 rounded-full bg-primary/20 blur-3xl" />
-      <div className="drift-slower absolute -bottom-20 -left-10 h-64 w-64 rounded-full bg-accent/20 blur-3xl" />
+      {/* Animated aurora */}
+      <div className="drift-slow absolute -right-16 -top-16 h-72 w-72 rounded-full bg-primary/25 blur-[90px]" />
+      <div className="drift-slower absolute -bottom-24 left-1/3 h-72 w-72 rounded-full bg-accent/25 blur-[90px]" />
+      <div className="drift-slow absolute -left-16 top-1/3 h-56 w-56 rounded-full bg-fuchsia-500/15 blur-[80px]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(60rem_30rem_at_80%_-20%,rgba(168,85,247,0.12),transparent)]" />
       <div className="relative max-w-2xl">
-        <span className="inline-flex items-center rounded-full border border-border bg-background/50 px-3 py-1 text-xs font-medium text-muted-foreground">
-          Track. Discover. Obsess.
+        <span className="inline-flex items-center gap-2 rounded-full border border-border bg-background/50 px-3 py-1 text-xs font-medium text-muted-foreground">
+          <LogoMark size={16} id="am-hero" /> Track. Discover. Obsess.
         </span>
         <h1 className="mt-4 font-display text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl">
           Your anime &amp; manga,{" "}

@@ -17,7 +17,8 @@ describe("Navbar", () => {
   it("marks the active route with aria-current", () => {
     render(<Navbar />);
     // pathname is mocked to "/", so the Home bottom-nav item is current.
-    expect(screen.getAllByRole("link", { name: /home/i })[0]).toHaveAttribute("aria-current", "page");
+    // Exact name "Home" avoids matching the brand link ("Animood home").
+    expect(screen.getByRole("link", { name: "Home" })).toHaveAttribute("aria-current", "page");
   });
 });
 

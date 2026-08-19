@@ -19,13 +19,13 @@ export function MediaCard({ media }: { media: MediaCardData }) {
       href={`/media/${media.id}`}
       className="group block focus:outline-none"
     >
-      <div className="relative aspect-[2/3] w-full overflow-hidden rounded-xl border border-border bg-surface shadow-sm ring-primary/0 transition-all duration-300 group-hover:-translate-y-1 group-hover:border-border-strong group-hover:shadow-xl group-hover:shadow-primary/10 group-focus-visible:ring-2 group-focus-visible:ring-primary">
+      <div className="relative aspect-[2/3] w-full overflow-hidden rounded-xl border border-border bg-surface shadow-sm ring-1 ring-transparent transition-all duration-300 group-hover:-translate-y-1.5 group-hover:border-primary/40 group-hover:ring-primary/30 group-hover:shadow-[0_18px_40px_-14px_rgba(129,140,248,0.45)] group-focus-visible:ring-2 group-focus-visible:ring-primary">
         {media.coverImage ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={media.coverImage}
             alt={media.title}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.07]"
             loading="lazy"
           />
         ) : (

@@ -7,6 +7,7 @@ import type { ComponentType } from "react";
 import {
   HomeIcon, SearchIcon, SparklesIcon, BookmarkIcon, ChartIcon,
 } from "@/components/icons";
+import { Logo } from "@/components/Logo";
 
 interface NavItem {
   href: Route;
@@ -34,10 +35,8 @@ export function Navbar() {
       {/* Top header */}
       <header className="sticky top-0 z-20 border-b border-border bg-background/70 backdrop-blur-xl">
         <nav className="mx-auto flex max-w-6xl items-center gap-6 px-4 py-3.5 sm:px-6">
-          <Link href="/" className="font-display text-xl font-extrabold tracking-tight">
-            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              Animood
-            </span>
+          <Link href="/" aria-label="Animood home" className="transition-opacity hover:opacity-90">
+            <Logo size={28} />
           </Link>
 
           {/* Desktop links */}

@@ -2,14 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useListStore } from "@/lib/list/reactive";
+import { useListStore, setEntry } from "@/lib/list/reactive";
 import type { ListEntry } from "@/lib/list/schema";
-import { MediaCard } from "@/components/MediaCard";
 import { presentRecommendations } from "@/lib/recommend/present";
 import type { ScoredCandidate } from "@/lib/recommend/scoring";
 import type { ExclusionFilters } from "@/lib/recommend/filters";
-import { GridSkeleton } from "@/components/Skeleton";
-import { SparklesIcon, SearchIcon } from "@/components/icons";
+import type { TasteProfile } from "@/lib/recommend/types";
 
 type Status = "idle" | "loading" | "error" | "cold" | "ready";
 
@@ -32,9 +30,11 @@ export function RecommendationsView() {
   const listKey = buildListKey(store.entries);
 
   const [pool, setPool] = useState<ScoredCandidate[]>([]);
+  const [profile, setProfile] = useState<TasteProfile | null>(null);
   const [status, setStatus] = useState<Status>("idle");
   const [diversity, setDiversity] = useState(0.3);
   const [excluded, setExcluded] = useState<string[]>([]);
+  const [dismissed, setDismissed] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     const list = Object.entries(store.entries).map(([id, e]) => ({
@@ -54,9 +54,10 @@ export function RecommendationsView() {
     })
       .then(async (res) => {
         if (!res.ok) return setStatus("error");
-        const body = (await res.json()) as { pool: ScoredCandidate[]; coldStart: boolean };
+        const body = (await res.json()) as { pool: ScoredCandidate[]; profile: TasteProfile | null; coldStart: boolean };
         if (body.coldStart) return setStatus("cold");
         setPool(body.pool);
+        setProfile(body.profile);
         setStatus("ready");
       })
       .catch((err: unknown) => {
@@ -69,20 +70,38 @@ export function RecommendationsView() {
 
   const filters: ExclusionFilters = useMemo(() => ({ genres: excluded, formats: [] }), [excluded]);
   const recs = useMemo(
-    () => presentRecommendations(pool, { diversity, filters, topN: 30 }),
-    [pool, diversity, filters]
+    () => presentRecommendations(pool, { diversity, filters, topN: 24 }).filter((r) => !dismissed.has(r.media.id)),
+    [pool, diversity, filters, dismissed]
   );
+
+  // Normalized "match" from base scores across the pool.
+  const matchOf = useMemo(() => {
+    const bases = pool.map((c) => c.base);
+    const min = Math.min(...bases, 0);
+    const max = Math.max(...bases, 1);
+    const map = new Map<number, number>();
+    for (const c of pool) {
+      const norm = max === min ? 1 : (c.base - min) / (max - min);
+      map.set(c.media.id, Math.round(70 + norm * 29));
+    }
+    return map;
+  }, [pool]);
+
+  const fingerprint = useMemo(() => {
+    if (!profile) return [];
+    const tags = Object.values(profile.tags).filter((t) => t.affinity > 0.01);
+    const max = Math.max(1, ...tags.map((t) => t.affinity));
+    return tags.sort((a, b) => b.affinity - a.affinity).slice(0, 7)
+      .map((t) => ({ name: t.name, pct: Math.round((t.affinity / max) * 100) }));
+  }, [profile]);
 
   if (status === "cold") {
     return (
       <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border py-20 text-center">
-        <SparklesIcon size={40} className="text-muted-foreground/50" />
-        <p className="mt-4 text-base font-medium">Rate a few titles to unlock recommendations.</p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Add shows you love (and score them) — the engine learns your taste.
-        </p>
-        <Link href="/search" className="mt-5 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary-strong to-accent px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition-transform hover:scale-[1.03]">
-          <SearchIcon size={16} /> Find titles
+        <p className="mono text-xs tracking-[0.14em] text-muted-2">RATE A FEW TITLES TO UNLOCK RECOMMENDATIONS</p>
+        <p className="mt-3 text-sm text-muted-foreground">Add shows you love and score them — the engine learns your taste.</p>
+        <Link href="/search" className="mt-6 rounded-full bg-foreground px-5 py-2.5 text-sm font-extrabold text-background transition-colors hover:bg-pink">
+          Find titles
         </Link>
       </div>
     );
@@ -90,66 +109,121 @@ export function RecommendationsView() {
   if (status === "loading" || status === "idle") {
     return (
       <div className="space-y-4">
-        <p className="text-sm text-muted-foreground">Analyzing your taste…</p>
-        <GridSkeleton count={15} />
+        <p className="mono text-xs tracking-[0.14em] text-muted-2">ANALYZING YOUR TASTE…</p>
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => <div key={i} className="skeleton aspect-[16/10] rounded-2xl" />)}
+        </div>
       </div>
     );
   }
   if (status === "error") {
     return (
-      <p className="rounded-2xl border border-dashed border-border py-12 text-center text-sm text-muted-foreground">
-        Couldn&apos;t build recommendations right now. Please try again later.
+      <p className="mono rounded-2xl border border-dashed border-border py-12 text-center text-xs tracking-[0.12em] text-muted-2">
+        COULDN&apos;T BUILD RECOMMENDATIONS RIGHT NOW — TRY AGAIN LATER
       </p>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Controls */}
-      <div className="flex flex-col gap-5 rounded-2xl border border-border bg-surface/60 p-5">
-        <label className="flex flex-col gap-2">
-          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Diversity — {diversity < 0.34 ? "Safe picks" : diversity < 0.67 ? "Balanced" : "Surprise me"}
-          </span>
-          <input
-            type="range" min={0} max={1} step={0.01} value={diversity}
-            onChange={(e) => setDiversity(Number(e.target.value))}
-            className="w-full accent-[var(--color-accent)]"
-          />
-        </label>
-        <div className="flex flex-wrap gap-2">
-          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Hide</span>
-          {GENRE_OPTIONS.map((g) => {
-            const on = excluded.includes(g);
-            return (
-              <button
-                key={g} type="button"
-                onClick={() => setExcluded((prev) => on ? prev.filter((x) => x !== g) : [...prev, g])}
-                className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                  on ? "border-destructive bg-destructive/20 text-foreground" : "border-border text-muted-foreground hover:bg-surface-hover"
-                }`}
-              >
-                {g}
-              </button>
-            );
-          })}
+    <div className="space-y-9">
+      {/* Taste fingerprint + controls */}
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        {fingerprint.length > 0 ? (
+          <div className="rounded-2xl border border-border bg-surface p-6">
+            <div className="mono mb-4 text-[10px] tracking-[0.14em] text-muted-2">TASTE FINGERPRINT</div>
+            <div className="flex flex-col gap-2.5">
+              {fingerprint.map((g) => (
+                <div key={g.name} className="flex items-center gap-3.5">
+                  <span className="w-28 shrink-0 text-[13px] font-bold">{g.name}</span>
+                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-border">
+                    <div className="h-full rounded-full bg-gradient-to-r from-pink to-violet" style={{ width: `${g.pct}%` }} />
+                  </div>
+                  <span className="mono w-10 text-right text-[11px] text-muted-foreground">{g.pct}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        <div className="flex flex-col gap-5 rounded-2xl border border-border bg-surface p-6">
+          <label className="flex flex-col gap-2.5">
+            <span className="mono text-[10px] tracking-[0.14em] text-muted-2">
+              DIVERSITY — {diversity < 0.34 ? "SAFE PICKS" : diversity < 0.67 ? "BALANCED" : "SURPRISE ME"}
+            </span>
+            <input
+              type="range" min={0} max={1} step={0.01} value={diversity}
+              onChange={(e) => setDiversity(Number(e.target.value))}
+              className="w-full accent-[var(--pink)]"
+            />
+          </label>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="mono text-[10px] tracking-[0.14em] text-muted-2">HIDE</span>
+            {GENRE_OPTIONS.map((g) => {
+              const on = excluded.includes(g);
+              return (
+                <button
+                  key={g} type="button"
+                  onClick={() => setExcluded((prev) => on ? prev.filter((x) => x !== g) : [...prev, g])}
+                  className={`mono rounded-full border px-3 py-1.5 text-[11px] tracking-[0.06em] transition-colors ${
+                    on ? "border-pink bg-pink/15 text-foreground" : "border-border-strong text-muted-foreground hover:border-foreground hover:text-foreground"
+                  }`}
+                >
+                  {g.toUpperCase()}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
+      <div className="mono flex items-baseline gap-4">
+        <span className="text-[11px] tracking-[0.16em] text-pink">PICKED FOR TONIGHT</span>
+        <span className="text-[10px] tracking-[0.14em] text-muted-2">REFRESHES WITH YOUR LIST</span>
+      </div>
+
       {recs.length === 0 ? (
-        <p className="py-12 text-center text-sm text-muted-foreground">
-          No recommendations match those filters — try loosening them.
+        <p className="mono py-12 text-center text-xs tracking-[0.12em] text-muted-2">
+          NO RECOMMENDATIONS MATCH THOSE FILTERS — TRY LOOSENING THEM
         </p>
       ) : (
-        <div className="stagger grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+        <div className="stagger grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {recs.map((r) => (
-            <div key={r.media.id} className="space-y-2">
-              <MediaCard media={{ id: r.media.id, title: r.media.title, coverImage: r.media.coverImage, format: r.media.format }} />
-              {r.reasonTags.length > 0 ? (
-                <p className="px-0.5 text-[11px] leading-tight text-muted-foreground">
-                  <span className="text-accent">Because you like</span> {r.reasonTags.join(", ")}
-                </p>
-              ) : null}
+            <div key={r.media.id} className="flex flex-col overflow-hidden rounded-2xl border border-border bg-surface transition-colors hover:border-pink">
+              <Link href={`/media/${r.media.id}`} className="relative block aspect-[16/10] stripe-fill">
+                {r.media.bannerImage || r.media.coverImage ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={r.media.bannerImage ?? r.media.coverImage!} alt={r.media.title} loading="lazy" className="h-full w-full object-cover" />
+                ) : null}
+                <span className="mono absolute right-3 top-3 rounded-full bg-background/85 px-2.5 py-1.5 text-[10px] tracking-[0.06em] text-pink">
+                  {matchOf.get(r.media.id) ?? 80}% MATCH
+                </span>
+              </Link>
+              <div className="p-5">
+                <Link href={`/media/${r.media.id}`} className="text-[19px] font-black leading-tight tracking-[-0.025em] transition-colors hover:text-pink">
+                  {r.media.title}
+                </Link>
+                {r.reasonTags.length > 0 ? (
+                  <div className="mono mt-2 text-[10px] leading-relaxed text-muted-2">
+                    BECAUSE YOU LIKE {r.reasonTags.join(", ").toUpperCase()}
+                  </div>
+                ) : null}
+                <div className="mt-4 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { setEntry(r.media.id, { status: "planning" }); setDismissed((p) => new Set(p).add(r.media.id)); }}
+                    className="rounded-full bg-foreground px-4 py-2 text-[12px] font-extrabold text-background transition-colors hover:bg-pink"
+                  >
+                    Add to list
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDismissed((p) => new Set(p).add(r.media.id))}
+                    className="rounded-full border border-border-strong px-4 py-2 text-[12px] font-bold text-muted-foreground transition-colors hover:border-foreground hover:text-foreground"
+                  >
+                    Not for me
+                  </button>
+                </div>
+              </div>
             </div>
           ))}
         </div>

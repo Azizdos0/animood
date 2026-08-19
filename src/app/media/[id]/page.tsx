@@ -80,32 +80,56 @@ export default async function MediaDetailPage({
         </div>
       </div>
 
-      <div className="mx-auto max-w-[1560px] space-y-12 px-6 py-11 sm:px-10">
-        {/* List editor */}
-        <div className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
-          <ListEditor mediaId={media.id} />
+      <div className="mx-auto grid max-w-[1560px] gap-11 px-6 py-11 sm:px-10 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+        {/* Left: synopsis + sequels */}
+        <div className="space-y-12">
+          {description ? (
+            <section>
+              <div className="mono mb-4 text-[11px] tracking-[0.16em] text-violet">SYNOPSIS</div>
+              <p className="max-w-3xl text-[17px] leading-relaxed text-muted-foreground">{description}</p>
+            </section>
+          ) : null}
+
+          {sequels.length > 0 ? (
+            <section>
+              <SectionHead kicker="RELATED · SEQUELS" title="Keep going" accent="pink" />
+              <div className="stagger grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6">
+                {sequels.map((s) => (
+                  <MediaCard key={s.id} media={{ id: s.id, title: s.title, coverImage: s.coverImage, format: s.format }} />
+                ))}
+              </div>
+            </section>
+          ) : null}
         </div>
 
-        {/* Synopsis */}
-        {description ? (
-          <section>
-            <div className="mono mb-4 text-[11px] tracking-[0.16em] text-violet">SYNOPSIS</div>
-            <p className="max-w-3xl text-[17px] leading-relaxed text-muted-foreground">{description}</p>
-          </section>
-        ) : null}
-
-        {/* Sequels */}
-        {sequels.length > 0 ? (
-          <section>
-            <SectionHead kicker="RELATED · SEQUELS" title="Keep going" accent="pink" />
-            <div className="stagger grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6">
-              {sequels.map((s) => (
-                <MediaCard key={s.id} media={{ id: s.id, title: s.title, coverImage: s.coverImage, format: s.format }} />
-              ))}
-            </div>
-          </section>
-        ) : null}
+        {/* Right sidebar */}
+        <aside className="flex flex-col gap-3.5">
+          <div className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
+            <ListEditor mediaId={media.id} />
+          </div>
+          <div className="grid grid-cols-2 gap-5 rounded-2xl border border-border bg-surface p-6">
+            <Fact value={score ? `★ ${score}` : "—"} label="AVG SCORE" accent />
+            <Fact value={formatPopularity(media.popularity)} label="POPULARITY" />
+            <Fact value={media.format ?? "—"} label="FORMAT" />
+            <Fact value={media.seasonYear ? String(media.seasonYear) : "—"} label="YEAR" />
+          </div>
+        </aside>
       </div>
     </article>
+  );
+}
+
+function formatPopularity(n: number): string {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
+  if (n >= 1000) return Math.round(n / 1000) + "k";
+  return String(n);
+}
+
+function Fact({ value, label, accent }: { value: string; label: string; accent?: boolean }) {
+  return (
+    <div>
+      <div className={`text-[24px] font-black leading-none tracking-[-0.02em] ${accent ? "text-pink" : ""}`}>{value}</div>
+      <div className="mono mt-1.5 text-[10px] tracking-[0.06em] text-muted-2">{label}</div>
+    </div>
   );
 }

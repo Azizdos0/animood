@@ -1,5 +1,6 @@
 import {
-  emptyStore, sanitizeStore, type ListEntry, type ListStoreV1,
+  emptyStore, sanitizeStore, LIST_STATUSES, CURRENT_LIST_VERSION,
+  type ListEntry, type ListStoreV1,
 } from "./schema";
 
 export const LIST_STORAGE_KEY = "animood.list.v1";
@@ -97,6 +98,29 @@ export function bulkUpsert(items: BulkImportItem[]): ListStoreV1 {
     };
   }
   const next: ListStoreV1 = { version: store.version, entries };
+  saveStore(next);
+  return next;
+}
+
+/**
+ * Apply a full replacement store (e.g. from a merge resolution). Unlike
+ * `bulkUpsert`, this preserves each entry's incoming `updatedAt` instead of
+ * stamping `now` — merge timestamps must survive.
+ */
+export function replaceStore(store: ListStoreV1): ListStoreV1 {
+  const entries: ListStoreV1["entries"] = {};
+  for (const [key, value] of Object.entries(store.entries ?? {})) {
+    const id = Number(key);
+    if (!Number.isInteger(id)) continue;
+    if (!LIST_STATUSES.includes(value.status)) continue;
+    entries[id] = {
+      status: value.status,
+      score: clampScore(value.score),
+      progress: clampProgress(value.progress),
+      updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : new Date().toISOString(),
+    };
+  }
+  const next: ListStoreV1 = { version: CURRENT_LIST_VERSION, entries };
   saveStore(next);
   return next;
 }

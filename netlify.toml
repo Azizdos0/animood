@@ -2,7 +2,7 @@
   command = "next build"
 
 [build.environment]
-  NODE_VERSION = "20"
+  NODE_VERSION = "22"
 
 # Official Next.js runtime — turns the App Router's server components and
 # route handlers into Netlify Functions/Edge so dynamic routes are served.

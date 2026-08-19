@@ -1,172 +1,129 @@
 @import "tailwindcss";
 
 /*
-  Animood — "Modern Dark / Cinema" design system.
-  Dark is the primary experience (delivered by default); an explicit light
-  system preference gets a clean light variant.
+  Animood — "Editorial Dark" design system.
+  Warm off-white on near-black, Archivo + JetBrains Mono, pink + violet accents.
+  Committed dark aesthetic.
 */
 
 :root {
-  /* Dark-primary palette (default) */
-  --background: #0b1020;
-  --surface: #131a30;
-  --surface-hover: #1b2440;
-  --foreground: #f5f7ff;
-  --muted-foreground: #98a2c0;
-  --primary: #818cf8;        /* indigo-400, reads bright on dark */
-  --primary-strong: #6366f1; /* indigo-500 */
-  --accent: #a855f7;         /* violet-500 */
-  --on-primary: #0b1020;
-  --border: rgba(255, 255, 255, 0.09);
-  --border-strong: rgba(255, 255, 255, 0.16);
-  --ring: #818cf8;
-  --destructive: #f43f5e;
-  --star: #fbbf24;
+  --background: #0a0a0d;
+  --foreground: #f4f2ef;
+  --surface: #101015;
+  --surface-2: #16161c;
+  --surface-3: #1a1a21;
+  --border: rgba(244, 242, 239, 0.10);
+  --border-strong: rgba(244, 242, 239, 0.18);
+  --muted-foreground: rgba(244, 242, 239, 0.55);
+  --muted-2: rgba(244, 242, 239, 0.42);
 
-  /* Ambient glow tint (visible mainly on dark) */
-  --glow-1: rgba(99, 102, 241, 0.20);
-  --glow-2: rgba(168, 85, 247, 0.16);
-}
+  --pink: oklch(0.72 0.19 20);
+  --violet: oklch(0.72 0.19 300);
+  --on-accent: #0a0a0d;
 
-@media (prefers-color-scheme: light) {
-  :root {
-    --background: #f6f7fb;
-    --surface: #ffffff;
-    --surface-hover: #f1f3fa;
-    --foreground: #101426;
-    --muted-foreground: #5b6478;
-    --primary: #4f46e5;
-    --primary-strong: #4338ca;
-    --accent: #7c3aed;
-    --on-primary: #ffffff;
-    --border: rgba(15, 23, 42, 0.10);
-    --border-strong: rgba(15, 23, 42, 0.16);
-    --ring: #4f46e5;
-    --destructive: #e11d48;
-    --star: #d97706;
-    --glow-1: rgba(99, 102, 241, 0.10);
-    --glow-2: rgba(168, 85, 247, 0.08);
-  }
+  --glow-pink: oklch(0.72 0.19 20 / 0.16);
+  --glow-violet: oklch(0.72 0.19 300 / 0.22);
 }
 
 @theme inline {
   --color-background: var(--background);
-  --color-surface: var(--surface);
-  --color-surface-hover: var(--surface-hover);
   --color-foreground: var(--foreground);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-primary: var(--primary);
-  --color-primary-strong: var(--primary-strong);
-  --color-accent: var(--accent);
-  --color-on-primary: var(--on-primary);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
-  --color-ring: var(--ring);
-  --color-destructive: var(--destructive);
-  --color-star: var(--star);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted-2: var(--muted-2);
+  --color-pink: var(--pink);
+  --color-violet: var(--violet);
+  --color-on-accent: var(--on-accent);
   --font-sans: var(--font-sans);
-  --font-display: var(--font-display);
+  --font-display: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  /* Back-compat aliases so existing components adopt the new palette. */
+  --color-primary: var(--pink);
+  --color-primary-strong: var(--pink);
+  --color-accent: var(--violet);
+  --color-on-primary: var(--on-accent);
+  --color-surface-hover: var(--surface-2);
+  --color-ring: var(--pink);
+  --color-star: var(--pink);
+  --color-destructive: oklch(0.64 0.22 18);
 }
 
 html {
   color-scheme: dark;
 }
-@media (prefers-color-scheme: light) {
-  html { color-scheme: light; }
-}
 
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-sans), Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-}
-
-/* Ambient cinematic glow fixed behind all content */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -2;
-  pointer-events: none;
-  background:
-    radial-gradient(60rem 60rem at 15% -10%, var(--glow-1), transparent 60%),
-    radial-gradient(50rem 50rem at 100% 0%, var(--glow-2), transparent 55%);
-}
-
-/* Subtle film-grain texture for a premium, tactile surface */
-body::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  opacity: 0.04;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size: 160px 160px;
-}
-@media (prefers-color-scheme: light) {
-  body::after { opacity: 0.025; }
+  overflow-x: hidden;
 }
 
 ::selection {
-  background: color-mix(in oklab, var(--primary) 35%, transparent);
-  color: var(--foreground);
+  background: var(--pink);
+  color: var(--on-accent);
 }
 
-/* Focus visibility for keyboard nav */
 :focus-visible {
-  outline: 2px solid var(--ring);
+  outline: 2px solid var(--pink);
   outline-offset: 2px;
   border-radius: 4px;
 }
 
-/* Custom scrollbar (dark-friendly) */
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--border-strong) transparent;
 }
 
-/* --- Motion: staggered fade-up reveal --- */
+/* Japanese accent (アニムード) — prefer webfont-free system JP fallback */
+.jp {
+  font-family: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN",
+    "Yu Gothic", "Meiryo", var(--font-sans), sans-serif;
+  font-weight: 900;
+}
+
+/* Mono label helper */
+.mono {
+  font-family: var(--font-mono), ui-monospace, monospace;
+}
+
+/* --- Motion --- */
 @keyframes fade-up {
-  from { opacity: 0; transform: translateY(14px) scale(0.98); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
 }
+.reveal { animation: fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.stagger > * { animation: fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.stagger > *:nth-child(1) { animation-delay: 0.03s; }
+.stagger > *:nth-child(2) { animation-delay: 0.06s; }
+.stagger > *:nth-child(3) { animation-delay: 0.09s; }
+.stagger > *:nth-child(4) { animation-delay: 0.12s; }
+.stagger > *:nth-child(5) { animation-delay: 0.15s; }
+.stagger > *:nth-child(6) { animation-delay: 0.18s; }
+.stagger > *:nth-child(7) { animation-delay: 0.21s; }
+.stagger > *:nth-child(8) { animation-delay: 0.24s; }
 
-.reveal {
-  animation: fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+@keyframes ticker {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
 }
+.animate-ticker { animation: ticker 40s linear infinite; }
 
-/* Per-item stagger for grids/rows: .stagger > * gets an increasing delay */
-.stagger > * {
-  animation: fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
 }
-.stagger > *:nth-child(1)  { animation-delay: 0.02s; }
-.stagger > *:nth-child(2)  { animation-delay: 0.06s; }
-.stagger > *:nth-child(3)  { animation-delay: 0.10s; }
-.stagger > *:nth-child(4)  { animation-delay: 0.14s; }
-.stagger > *:nth-child(5)  { animation-delay: 0.18s; }
-.stagger > *:nth-child(6)  { animation-delay: 0.22s; }
-.stagger > *:nth-child(7)  { animation-delay: 0.26s; }
-.stagger > *:nth-child(8)  { animation-delay: 0.30s; }
-.stagger > *:nth-child(9)  { animation-delay: 0.34s; }
-.stagger > *:nth-child(10) { animation-delay: 0.38s; }
-.stagger > *:nth-child(11) { animation-delay: 0.42s; }
-.stagger > *:nth-child(12) { animation-delay: 0.46s; }
-
-@media (prefers-reduced-motion: reduce) {
-  .reveal,
-  .stagger > * {
-    animation: none;
-  }
-}
+.pulse-dot { animation: pulse-dot 2.4s ease-in-out infinite; }
 
 /* --- Shimmer skeletons --- */
-@keyframes shimmer {
-  100% { transform: translateX(100%); }
-}
-
+@keyframes shimmer { 100% { transform: translateX(100%); } }
 .skeleton {
   position: relative;
   overflow: hidden;
@@ -178,25 +135,20 @@ body::after {
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
-  background: linear-gradient(
-    90deg,
-    transparent,
-    color-mix(in oklab, var(--foreground) 8%, transparent),
-    transparent
-  );
+  background: linear-gradient(90deg, transparent,
+    color-mix(in oklab, var(--foreground) 8%, transparent), transparent);
   animation: shimmer 1.6s infinite;
 }
 
-/* Slow ambient drift for hero glow blobs */
-@keyframes drift {
-  0%, 100% { transform: translate(0, 0); }
-  50% { transform: translate(24px, -18px); }
+/* Diagonal-stripe placeholder for missing cover art */
+.stripe-fill {
+  background:
+    repeating-linear-gradient(115deg, rgba(244, 242, 239, 0.07) 0 10px, transparent 10px 20px),
+    var(--surface-3);
 }
-.drift-slow { animation: drift 14s ease-in-out infinite; }
-.drift-slower { animation: drift 20s ease-in-out infinite reverse; }
 
 @media (prefers-reduced-motion: reduce) {
-  .skeleton::after,
-  .drift-slow,
-  .drift-slower { animation: none; }
+  .reveal, .stagger > *, .animate-ticker, .pulse-dot, .skeleton::after {
+    animation: none;
+  }
 }

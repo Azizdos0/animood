@@ -14,13 +14,13 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border py-20 text-center">
-      <p className="font-display text-lg font-bold">Something went wrong.</p>
-      <p className="mt-1 text-sm text-muted-foreground">Please try again.</p>
+    <div className="mx-auto flex max-w-[1560px] flex-col items-center justify-center px-6 py-28 text-center sm:px-10">
+      <p className="text-2xl font-black tracking-[-0.03em]">Something went wrong.</p>
+      <p className="mono mt-2 text-xs tracking-[0.14em] text-muted-2">PLEASE TRY AGAIN</p>
       <button
         type="button"
         onClick={() => reset()}
-        className="mt-5 rounded-xl bg-gradient-to-r from-primary-strong to-accent px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/25 transition-transform hover:scale-[1.03]"
+        className="mt-6 rounded-full bg-foreground px-6 py-2.5 text-sm font-extrabold text-background transition-colors hover:bg-pink"
       >
         Try again
       </button>

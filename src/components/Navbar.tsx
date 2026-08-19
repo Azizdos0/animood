@@ -7,7 +7,6 @@ import type { ComponentType } from "react";
 import {
   HomeIcon, SearchIcon, SparklesIcon, BookmarkIcon, ChartIcon,
 } from "@/components/icons";
-import { Logo } from "@/components/Logo";
 
 interface NavItem {
   href: Route;
@@ -32,39 +31,39 @@ export function Navbar() {
 
   return (
     <>
-      {/* Top header */}
-      <header className="sticky top-0 z-20 border-b border-border bg-background/70 backdrop-blur-xl">
-        <nav className="mx-auto flex max-w-6xl items-center gap-6 px-4 py-3.5 sm:px-6">
-          <Link href="/" aria-label="Animood home" className="transition-opacity hover:opacity-90">
-            <Logo size={28} />
-          </Link>
+      <header className="sticky top-0 z-50 flex items-center gap-6 border-b border-border bg-background/85 px-5 py-[15px] backdrop-blur-xl sm:gap-10 sm:px-10">
+        <Link href="/" aria-label="Animood home" className="flex items-baseline gap-2 transition-opacity hover:opacity-90">
+          <span className="text-[22px] font-black leading-none tracking-[-0.03em]">ANIMOOD</span>
+          <span className="jp text-[15px] leading-none text-pink">アニムード</span>
+        </Link>
 
-          {/* Desktop links */}
-          <div className="ml-auto hidden items-center gap-1 text-sm font-medium sm:flex">
-            {NAV.slice(1).map(({ href, label, Icon }) => {
-              const active = isActive(pathname, href);
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  aria-current={active ? "page" : undefined}
-                  className={`flex items-center gap-2 rounded-full px-3.5 py-1.5 transition-colors ${
-                    active
-                      ? "bg-primary/15 text-foreground"
-                      : "text-muted-foreground hover:bg-surface-hover hover:text-foreground"
-                  }`}
-                >
-                  <Icon size={17} />
-                  {label}
-                </Link>
-              );
-            })}
-          </div>
+        {/* Desktop nav */}
+        <nav className="hidden items-center gap-6 text-[13px] font-semibold tracking-[0.02em] sm:flex">
+          {NAV.map(({ href, label }) => {
+            const active = isActive(pathname, href);
+            return (
+              <Link
+                key={href}
+                href={href}
+                aria-current={active ? "page" : undefined}
+                className={`transition-colors hover:text-foreground ${active ? "text-foreground" : "text-muted-foreground"}`}
+              >
+                {label}
+              </Link>
+            );
+          })}
         </nav>
+
+        <div className="ml-auto flex items-center gap-3">
+          <div className="mono flex items-center gap-2 rounded-full border border-border-strong px-3.5 py-2 text-[11px] text-muted-foreground">
+            <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-violet" />
+            <span>SYNCED · LOCAL</span>
+          </div>
+        </div>
       </header>
 
       {/* Mobile bottom nav */}
-      <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/85 backdrop-blur-xl sm:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/90 backdrop-blur-xl sm:hidden">
         <div className="mx-auto grid max-w-md grid-cols-5">
           {NAV.map(({ href, label, Icon }) => {
             const active = isActive(pathname, href);
@@ -73,11 +72,9 @@ export function Navbar() {
                 key={href}
                 href={href}
                 aria-current={active ? "page" : undefined}
-                className={`flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors ${
-                  active ? "text-accent" : "text-muted-foreground"
-                }`}
+                className={`flex flex-col items-center gap-1 py-2.5 text-[10px] font-semibold transition-colors ${active ? "text-pink" : "text-muted-foreground"}`}
               >
-                <Icon size={22} />
+                <Icon size={21} />
                 {label}
               </Link>
             );

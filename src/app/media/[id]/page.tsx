@@ -3,7 +3,7 @@ import { getMediaById } from "@/lib/anilist/media";
 import { relatedByType } from "@/lib/anilist/relations";
 import { ListEditor } from "@/components/ListEditor";
 import { MediaCard } from "@/components/MediaCard";
-import { StarIcon } from "@/components/icons";
+import { SectionHead } from "@/components/editorial";
 
 export default async function MediaDetailPage({
   params,
@@ -19,8 +19,8 @@ export default async function MediaDetailPage({
     media = await getMediaById(mediaId);
   } catch {
     return (
-      <p className="rounded-2xl border border-dashed border-border py-12 text-center text-sm text-muted-foreground">
-        Couldn&apos;t load this title right now. Please try again later.
+      <p className="mono mx-auto max-w-[1560px] rounded-2xl border border-dashed border-border px-6 py-14 text-center text-xs tracking-[0.14em] text-muted-2">
+        COULDN&apos;T LOAD THIS TITLE — TRY AGAIN LATER
       </p>
     );
   }
@@ -28,114 +28,84 @@ export default async function MediaDetailPage({
 
   const sequels = relatedByType(media, "SEQUEL");
   const description = (media.description ?? "").replace(/<[^>]+>/g, "");
-  const meta = [
+  const metaLine = [
     media.format,
     media.seasonYear,
-    media.episodes ? `${media.episodes} eps` : null,
-    media.chapters ? `${media.chapters} ch` : null,
-  ].filter(Boolean);
+    media.episodes ? `${media.episodes} EP` : null,
+    media.chapters ? `${media.chapters} CH` : null,
+  ].filter(Boolean).join(" · ");
+  const score = media.averageScore ? (media.averageScore / 20).toFixed(1) : null;
 
   return (
-    <article className="reveal space-y-10">
-      {/* Cinematic banner backdrop */}
-      <div className="relative -mx-4 -mt-8 sm:-mx-6">
-        <div className="relative h-48 w-full overflow-hidden sm:h-64 md:h-72">
+    <article className="reveal">
+      {/* Banner */}
+      <div className="relative border-b border-border">
+        <div className="relative h-[220px] w-full stripe-fill sm:h-[300px]">
           {media.bannerImage ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={media.bannerImage}
-              alt=""
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <div className="h-full w-full bg-gradient-to-br from-primary/25 to-accent/25" />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-background/20" />
+            <img src={media.bannerImage} alt="" className="h-full w-full object-cover" />
+          ) : null}
+          <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(10,10,13,0.2), var(--background))" }} />
         </div>
 
-        {/* Cover + headline overlapping the banner */}
-        <div className="mx-auto -mt-24 max-w-6xl px-4 sm:-mt-28 sm:px-6">
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-end">
-            <div className="w-36 shrink-0 sm:w-44">
-              {media.coverImage ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={media.coverImage}
-                  alt={media.title}
-                  className="aspect-[2/3] w-full rounded-2xl border border-border-strong object-cover shadow-2xl"
-                />
-              ) : null}
-            </div>
-            <div className="space-y-3 pb-1">
-              <h1 className="font-display text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl">
-                {media.title}
-              </h1>
-              <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                {media.averageScore ? (
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 font-medium text-foreground">
-                    <StarIcon size={14} filled className="text-star" /> {media.averageScore}
-                  </span>
-                ) : null}
-                {meta.map((m) => (
-                  <span
-                    key={String(m)}
-                    className="rounded-full border border-border bg-surface px-2.5 py-1"
-                  >
-                    {m}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Genres */}
-      {media.genres.length > 0 ? (
-        <div className="flex flex-wrap gap-2">
-          {media.genres.map((g) => (
-            <span
-              key={g}
-              className="rounded-full border border-border bg-surface/60 px-3 py-1 text-xs font-medium text-muted-foreground"
-            >
-              {g}
-            </span>
-          ))}
-        </div>
-      ) : null}
-
-      {/* List editor card */}
-      <div className="rounded-2xl border border-border bg-surface/60 p-5">
-        <ListEditor mediaId={media.id} />
-      </div>
-
-      {/* Synopsis */}
-      {description ? (
-        <section className="space-y-3">
-          <h2 className="font-display text-lg font-bold tracking-tight">Synopsis</h2>
-          <p className="max-w-3xl text-sm leading-relaxed text-muted-foreground">
-            {description}
-          </p>
-        </section>
-      ) : null}
-
-      {/* Sequels */}
-      {sequels.length > 0 ? (
-        <section className="space-y-4">
-          <div className="flex items-center gap-3">
-            <span className="h-5 w-1.5 rounded-full bg-gradient-to-b from-primary to-accent" />
-            <h2 className="font-display text-lg font-bold tracking-tight">Sequels</h2>
-          </div>
-          <div className="stagger grid grid-cols-3 gap-3 sm:grid-cols-4 sm:gap-4 md:grid-cols-6">
-            {sequels.map((s) => (
-              <MediaCard
-                key={s.id}
-                media={{ id: s.id, title: s.title, coverImage: s.coverImage, format: s.format }}
+        <div className="mx-auto -mt-24 grid max-w-[1560px] items-end gap-9 px-6 sm:-mt-28 sm:px-10 md:grid-cols-[230px_minmax(0,1fr)]">
+          <div className="w-40 md:w-full">
+            {media.coverImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={media.coverImage}
+                alt={media.title}
+                className="aspect-[2/3] w-full rounded-2xl border border-border-strong object-cover shadow-2xl"
               />
-            ))}
+            ) : null}
           </div>
-        </section>
-      ) : null}
+          <div className="pb-1.5">
+            <div className="mono flex items-center gap-2.5 text-[11px] tracking-[0.12em] text-pink">
+              <span className="text-muted-2">{metaLine}</span>
+            </div>
+            <h1 className="mt-3.5 text-[clamp(34px,5vw,68px)] font-black leading-[0.92] tracking-[-0.045em]">
+              {media.title}
+            </h1>
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              {score ? (
+                <span className="mono rounded-full bg-violet px-3.5 py-1.5 text-[10px] tracking-[0.1em] text-on-accent">★ {score}</span>
+              ) : null}
+              {media.genres.slice(0, 4).map((g) => (
+                <span key={g} className="mono rounded-full border border-border-strong px-3.5 py-1.5 text-[10px] tracking-[0.1em] text-muted-foreground">
+                  {g.toUpperCase()}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-[1560px] space-y-12 px-6 py-11 sm:px-10">
+        {/* List editor */}
+        <div className="rounded-2xl border border-border bg-surface p-5 sm:p-6">
+          <ListEditor mediaId={media.id} />
+        </div>
+
+        {/* Synopsis */}
+        {description ? (
+          <section>
+            <div className="mono mb-4 text-[11px] tracking-[0.16em] text-violet">SYNOPSIS</div>
+            <p className="max-w-3xl text-[17px] leading-relaxed text-muted-foreground">{description}</p>
+          </section>
+        ) : null}
+
+        {/* Sequels */}
+        {sequels.length > 0 ? (
+          <section>
+            <SectionHead kicker="RELATED · SEQUELS" title="Keep going" accent="pink" />
+            <div className="stagger grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6">
+              {sequels.map((s) => (
+                <MediaCard key={s.id} media={{ id: s.id, title: s.title, coverImage: s.coverImage, format: s.format }} />
+              ))}
+            </div>
+          </section>
+        ) : null}
+      </div>
     </article>
   );
 }

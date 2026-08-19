@@ -1,37 +1,42 @@
 import type { Metadata } from "next";
-import { Sora, Inter } from "next/font/google";
+import { Archivo, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 
-const sora = Sora({
-  variable: "--font-display",
-  subsets: ["latin"],
-  weight: ["500", "600", "700", "800"],
-});
-
-const inter = Inter({
+const archivo = Archivo({
   variable: "--font-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "800", "900"],
+});
+
+const jetbrains = JetBrains_Mono({
+  variable: "--font-mono",
+  subsets: ["latin"],
+  weight: ["400", "500"],
 });
 
 export const metadata: Metadata = {
   title: "Animood",
-  description: "A modern anime & manga tracker.",
+  description: "A modern anime & manga tracker. Track. Discover. Obsess.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${sora.variable} ${inter.variable} h-full antialiased`}
+      className={`${archivo.variable} ${jetbrains.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <Navbar />
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 pt-8 pb-28 sm:px-6 sm:pb-8">
-          {children}
-        </main>
-        <footer className="border-t border-border py-6 pb-28 text-center text-xs text-muted-foreground sm:pb-6">
-          Animood — data from AniList. Your list lives in this browser.
+        <main className="flex-1 pb-24 sm:pb-0">{children}</main>
+        <footer className="mx-auto flex w-full max-w-[1560px] flex-wrap items-center justify-between gap-6 border-t border-border px-6 py-11 sm:px-10">
+          <div className="flex items-baseline gap-2.5">
+            <span className="text-3xl font-black tracking-[-0.04em]">ANIMOOD</span>
+            <span className="jp text-base text-violet">アニムード</span>
+          </div>
+          <div className="mono text-right text-[11px] leading-7 tracking-[0.1em] text-muted-2">
+            DATA FROM ANILIST<br />YOUR LIST LIVES IN THIS BROWSER
+          </div>
         </footer>
       </body>
     </html>

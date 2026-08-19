@@ -42,3 +42,4 @@ next-env.d.ts
 
 # superpowers scratch (planning artifacts, not part of the app)
 /.superpowers/
+.netlify/

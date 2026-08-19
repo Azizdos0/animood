@@ -11,48 +11,49 @@ export interface MediaCardData {
   format?: string | null;
 }
 
-export function MediaCard({ media }: { media: MediaCardData }) {
+export function MediaCard({ media, rank }: { media: MediaCardData; rank?: number }) {
   const entry = useListEntry(media.id);
 
   return (
-    <Link
-      href={`/media/${media.id}`}
-      className="group block focus:outline-none"
-    >
-      <div className="relative aspect-[2/3] w-full overflow-hidden rounded-xl border border-border bg-surface shadow-sm ring-1 ring-transparent transition-all duration-300 group-hover:-translate-y-1.5 group-hover:border-primary/40 group-hover:ring-primary/30 group-hover:shadow-[0_18px_40px_-14px_rgba(129,140,248,0.45)] group-focus-visible:ring-2 group-focus-visible:ring-primary">
+    <Link href={`/media/${media.id}`} className="group flex flex-col gap-3 focus:outline-none">
+      <div className="relative aspect-[2/3] overflow-hidden rounded-2xl border border-border stripe-fill shadow-sm transition-all duration-300 group-hover:-translate-y-1 group-hover:border-pink/50 group-hover:shadow-[0_18px_40px_-16px_oklch(0.72_0.19_20/0.5)] group-focus-visible:border-pink">
         {media.coverImage ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={media.coverImage}
             alt={media.title}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.07]"
             loading="lazy"
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.06]"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
-            No image
-          </div>
+          <span className="mono absolute inset-0 grid place-items-center text-[10px] tracking-[0.1em] text-muted-2">
+            COVER ART
+          </span>
         )}
 
-        {/* Bottom gradient scrim for legibility */}
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
-
-        {entry ? (
-          <span className="absolute left-2 top-2 rounded-md bg-primary-strong/90 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm backdrop-blur-sm">
+        {rank !== undefined ? (
+          <span
+            className={`mono absolute left-2.5 top-2.5 rounded-full bg-background/85 px-2.5 py-1 text-[9px] tracking-[0.1em] ${
+              rank === 1 ? "text-pink" : "text-muted-foreground"
+            }`}
+          >
+            #{rank}
+          </span>
+        ) : entry ? (
+          <span className="mono absolute left-2.5 top-2.5 rounded-full bg-pink px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.08em] text-on-accent">
             {STATUS_LABELS[entry.status]}
           </span>
         ) : null}
 
-        <div className="absolute inset-x-0 bottom-0 p-2.5">
-          <p className="line-clamp-2 text-sm font-semibold leading-tight text-white drop-shadow">
-            {media.title}
-          </p>
-          {media.format ? (
-            <p className="mt-0.5 text-[11px] font-medium uppercase tracking-wide text-white/70">
-              {media.format}
-            </p>
-          ) : null}
-        </div>
+        {media.format ? (
+          <span className="mono absolute bottom-2.5 right-2.5 rounded-md bg-background/80 px-2 py-1 text-[9px] tracking-[0.08em]">
+            {media.format}
+          </span>
+        ) : null}
+      </div>
+
+      <div className="line-clamp-2 text-[15px] font-extrabold leading-tight tracking-[-0.015em] transition-colors group-hover:text-pink">
+        {media.title}
       </div>
     </Link>
   );

@@ -1,17 +1,20 @@
 import Link from "next/link";
 import { MyListView } from "@/components/MyListView";
+import { PageHead } from "@/components/editorial";
+import { UploadIcon } from "@/components/icons";
 
 export default function MyListPage() {
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center gap-3">
-        <span className="h-6 w-1.5 rounded-full bg-gradient-to-b from-primary to-accent" />
-        <h1 className="font-display text-2xl font-bold tracking-tight">My List</h1>
+    <div className="mx-auto max-w-[1560px] space-y-8 px-6 py-12 sm:px-10">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <PageHead kicker="MY LIST · STORED IN THIS BROWSER" accent="violet">
+          My list
+        </PageHead>
         <Link
           href="/import"
-          className="ml-auto rounded-xl border border-border-strong bg-surface px-4 py-2 text-sm font-semibold transition-colors hover:bg-surface-hover"
+          className="inline-flex items-center gap-2 rounded-full border border-border-strong bg-surface px-5 py-2.5 text-sm font-bold transition-colors hover:border-foreground"
         >
-          Import from MyAnimeList
+          <UploadIcon size={16} /> Import from MyAnimeList
         </Link>
       </div>
       <MyListView />

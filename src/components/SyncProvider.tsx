@@ -7,17 +7,22 @@ import { emptyStore, type ListEntry, type ListStoreV1 } from "@/lib/list/schema"
 import { mergeLists } from "@/lib/sync/merge";
 import { pullCloud, pushEntries, deleteEntries } from "@/lib/sync/cloud";
 import { getListOwner, setListOwner } from "@/lib/sync/owner";
+import { getProfileByUserId } from "@/lib/profile/queries";
 
 interface AuthUser { email: string | null; avatarUrl: string | null; }
 interface AuthState {
   user: AuthUser | null;
   configured: boolean;
+  username: string | null;
+  needsUsername: boolean;
   signIn: () => void;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const Ctx = createContext<AuthState>({
-  user: null, configured: false, signIn: () => {}, signOut: async () => {},
+  user: null, configured: false, username: null, needsUsername: false,
+  signIn: () => {}, signOut: async () => {}, refreshProfile: async () => {},
 });
 
 export function useAuth(): AuthState {
@@ -50,6 +55,8 @@ function diffEntries(last: ListStoreV1, current: ListStoreV1): {
 export function SyncProvider({ children }: { children: React.ReactNode }) {
   const configured = isSupabaseConfigured();
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [username, setUsername] = useState<string | null>(null);
+  const [needsUsername, setNeedsUsername] = useState(false);
   const userIdRef = useRef<string | null>(null);
   const lastSyncedRef = useRef<ListStoreV1>(emptyStore());
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -65,6 +72,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       if (userIdRef.current === userId) { setUser(u); return; }
       userIdRef.current = userId;
       setUser(u);
+      void refreshProfile();
       try {
         const rows = await pullCloud(supabase, userId);
         const owner = getListOwner();
@@ -105,6 +113,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       userIdRef.current = null;
       lastSyncedRef.current = emptyStore();
       setUser(null);
+      setUsername(null);
+      setNeedsUsername(false);
       // A lone user keeps their list as an anonymous local list; a shared
       // device's next (different) user will hit the replace path on sign-in.
       setListOwner(null);
@@ -128,6 +138,19 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     return () => { sub.subscription.unsubscribe(); unsubStore?.(); };
   }, [configured]);
 
+  async function refreshProfile() {
+    const uid = userIdRef.current;
+    if (!configured || !uid) return;
+    try {
+      const profile = await getProfileByUserId(supabaseBrowser(), uid);
+      setUsername(profile?.username ?? null);
+      setNeedsUsername(profile === null);
+    } catch {
+      // profile fetch failure is non-fatal; never block on it.
+      setNeedsUsername(false);
+    }
+  }
+
   function signIn() {
     if (!configured) return;
     supabaseBrowser().auth.signInWithOAuth({
@@ -141,5 +164,9 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     await supabaseBrowser().auth.signOut();
   }
 
-  return <Ctx.Provider value={{ user, configured, signIn, signOut }}>{children}</Ctx.Provider>;
+  return (
+    <Ctx.Provider value={{ user, configured, username, needsUsername, signIn, signOut, refreshProfile }}>
+      {children}
+    </Ctx.Provider>
+  );
 }

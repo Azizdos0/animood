@@ -67,15 +67,15 @@ describe("RecommendationsView", () => {
   });
 
   it("buildListKey (pure helper) changes when score or status changes, not just membership", () => {
-    const base = { 1: { status: "completed" as const, score: 5, progress: 12, updatedAt: "t" } };
-    const rescored = { 1: { status: "completed" as const, score: 9, progress: 12, updatedAt: "t" } };
-    const restatused = { 1: { status: "dropped" as const, score: 5, progress: 12, updatedAt: "t" } };
+    const base = { 1: { status: "completed" as const, score: 5, progress: 12, updatedAt: "t", isFavorite: false } };
+    const rescored = { 1: { status: "completed" as const, score: 9, progress: 12, updatedAt: "t", isFavorite: false } };
+    const restatused = { 1: { status: "dropped" as const, score: 5, progress: 12, updatedAt: "t", isFavorite: false } };
 
     expect(buildListKey(base)).not.toBe(buildListKey(rescored));
     expect(buildListKey(base)).not.toBe(buildListKey(restatused));
     // Same score/status -> same key, regardless of unrelated fields.
     expect(buildListKey(base)).toBe(
-      buildListKey({ 1: { status: "completed", score: 5, progress: 999, updatedAt: "other" } })
+      buildListKey({ 1: { status: "completed", score: 5, progress: 999, updatedAt: "other", isFavorite: false } })
     );
   });
 });

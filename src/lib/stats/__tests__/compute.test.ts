@@ -12,7 +12,7 @@ function media(id: number, type: MediaType, episodes: number | null, chapters: n
   };
 }
 function entry(status: ListStatus, score: number | null, progress: number): ListEntry {
-  return { status, score, progress, updatedAt: "2026-01-01T00:00:00.000Z" };
+  return { status, score, progress, updatedAt: "2026-01-01T00:00:00.000Z", isFavorite: false };
 }
 const se = (m: Media, e: ListEntry): StatEntry => ({ media: m, entry: e });
 

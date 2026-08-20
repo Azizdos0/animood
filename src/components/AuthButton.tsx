@@ -1,9 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useAuth } from "@/components/SyncProvider";
 
 export function AuthButton() {
-  const { user, configured, signIn, signOut } = useAuth();
+  const { user, configured, signIn, signOut, username } = useAuth();
 
   if (!configured) {
     return (
@@ -26,6 +27,20 @@ export function AuthButton() {
     );
   }
 
+  const avatarContent = user.avatarUrl ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={user.avatarUrl}
+      alt={user.email ?? "Account"}
+      className="h-8 w-8 rounded-full object-cover"
+    />
+  ) : (
+    (user.email ?? "?").slice(0, 1).toUpperCase()
+  );
+
+  const avatarClassName =
+    "grid h-8 w-8 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-pink to-violet text-[12px] font-black text-on-accent";
+
   return (
     <div className="flex items-center gap-2.5">
       <div className="mono hidden items-center gap-2 rounded-full border border-border-strong px-3.5 py-2 text-[11px] text-muted-foreground sm:flex">
@@ -35,20 +50,24 @@ export function AuthButton() {
       <button
         type="button"
         onClick={() => signOut()}
-        title={user.email ?? "Signed in"}
-        className="grid h-8 w-8 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-pink to-violet text-[12px] font-black text-on-accent"
+        className="mono text-[10px] font-bold text-muted-foreground transition-colors hover:text-foreground"
       >
-        {user.avatarUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={user.avatarUrl}
-            alt={user.email ?? "Account"}
-            className="h-8 w-8 rounded-full object-cover"
-          />
-        ) : (
-          (user.email ?? "?").slice(0, 1).toUpperCase()
-        )}
+        Sign out
       </button>
+      {username ? (
+        <Link
+          href={`/u/${username}`}
+          aria-label="Your profile"
+          title={user.email ?? "Signed in"}
+          className={avatarClassName}
+        >
+          {avatarContent}
+        </Link>
+      ) : (
+        <div title={user.email ?? "Signed in"} className={avatarClassName}>
+          {avatarContent}
+        </div>
+      )}
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { entryToRow } from "./merge";
 // Narrow structural type — the real Supabase client satisfies it.
 export interface SupaLike {
   from(table: string): any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  rpc(fn: string, args?: unknown): any; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
 const TABLE = "list_entries";

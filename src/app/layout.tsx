@@ -3,6 +3,7 @@ import { Archivo, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 import { SyncProvider } from "@/components/SyncProvider";
+import { ProfileGate } from "@/components/ProfileGate";
 
 const archivo = Archivo({
   variable: "--font-sans",
@@ -30,6 +31,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         <SyncProvider>
           <Navbar />
+          <ProfileGate />
           <main className="flex-1 pb-24 sm:pb-0">{children}</main>
           <footer className="mx-auto flex w-full max-w-[1560px] flex-wrap items-center justify-between gap-6 border-t border-border px-6 py-11 sm:px-10">
             <div className="flex items-baseline gap-2.5">

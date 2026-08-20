@@ -27,7 +27,7 @@ function makeSupa() {
 }
 
 const entry = (updatedAt: string, over: Partial<ListEntry> = {}): ListEntry => ({
-  status: "watching", score: null, progress: 0, updatedAt, ...over,
+  status: "watching", score: null, progress: 0, updatedAt, isFavorite: false, ...over,
 });
 
 describe("pullCloud", () => {
@@ -48,8 +48,8 @@ describe("pushEntries", () => {
     expect(supa._calls.upsert).toHaveLength(1);
     const { rows, opts } = supa._calls.upsert[0];
     expect(rows).toEqual([
-      { user_id: "u1", media_id: 7, status: "completed", score: 8, progress: 12, updated_at: "2026-02-01T00:00:00.000Z" },
-      { user_id: "u1", media_id: 9, status: "watching", score: null, progress: 0, updated_at: "2026-02-02T00:00:00.000Z" },
+      { user_id: "u1", media_id: 7, status: "completed", score: 8, progress: 12, updated_at: "2026-02-01T00:00:00.000Z", is_favorite: false },
+      { user_id: "u1", media_id: 9, status: "watching", score: null, progress: 0, updated_at: "2026-02-02T00:00:00.000Z", is_favorite: false },
     ]);
     expect(opts).toEqual({ onConflict: "user_id,media_id" });
   });

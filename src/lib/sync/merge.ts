@@ -12,6 +12,7 @@ export function rowToEntry(row: CloudRow): { mediaId: number; entry: ListEntry }
       score: row.score,
       progress: row.progress,
       updatedAt: row.updated_at,
+      isFavorite: row.is_favorite === true,
     },
   };
 }
@@ -24,6 +25,7 @@ export function entryToRow(userId: string, mediaId: number, entry: ListEntry): C
     score: entry.score,
     progress: entry.progress,
     updated_at: entry.updatedAt,
+    is_favorite: entry.isFavorite === true,
   };
 }
 

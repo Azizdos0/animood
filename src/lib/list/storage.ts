@@ -56,6 +56,7 @@ export function upsertEntry(
     score: clampScore(rawScore),
     progress: clampProgress(rawProgress),
     updatedAt: new Date().toISOString(),
+    isFavorite: patch.isFavorite ?? existing?.isFavorite ?? false,
   };
   const next: ListStoreV1 = {
     version: store.version,
@@ -95,6 +96,7 @@ export function bulkUpsert(items: BulkImportItem[]): ListStoreV1 {
       score: clampScore(item.score),
       progress: clampProgress(item.progress),
       updatedAt: now,
+      isFavorite: false,
     };
   }
   const next: ListStoreV1 = { version: store.version, entries };
@@ -118,6 +120,7 @@ export function replaceStore(store: ListStoreV1): ListStoreV1 {
       score: clampScore(value.score),
       progress: clampProgress(value.progress),
       updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : new Date().toISOString(),
+      isFavorite: value.isFavorite === true,
     };
   }
   const next: ListStoreV1 = { version: CURRENT_LIST_VERSION, entries };

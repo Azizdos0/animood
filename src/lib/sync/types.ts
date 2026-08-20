@@ -7,4 +7,5 @@ export interface CloudRow {
   score: number | null;
   progress: number;
   updated_at: string; // ISO timestamp
+  is_favorite: boolean;
 }

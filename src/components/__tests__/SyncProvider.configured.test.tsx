@@ -46,11 +46,11 @@ import { type ListEntry } from "@/lib/list/schema";
 
 const row = (media_id: number, over: Partial<CloudRow> = {}): CloudRow => ({
   user_id: "u", media_id, status: "watching", score: null, progress: 0,
-  updated_at: "2026-01-01T00:00:00.000Z", ...over,
+  updated_at: "2026-01-01T00:00:00.000Z", is_favorite: false, ...over,
 });
 
 const entry = (over: Partial<ListEntry> = {}): ListEntry => ({
-  status: "watching", score: null, progress: 0, updatedAt: "2026-01-01T00:00:00.000Z", ...over,
+  status: "watching", score: null, progress: 0, updatedAt: "2026-01-01T00:00:00.000Z", isFavorite: false, ...over,
 });
 
 function seedLocal(entries: Record<number, ListEntry>) {

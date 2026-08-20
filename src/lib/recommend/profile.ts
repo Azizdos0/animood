@@ -16,7 +16,7 @@ export function buildTasteProfile(titles: RatedTitle[]): TasteProfile {
     else if (t.status === "dropped") signal = DROPPED_SIGNAL;
     if (signal === null) continue;
 
-    for (const tag of t.media.tags) {
+    for (const tag of t.media.tags ?? []) {
       const w = tag.rank / 100;
       if (w <= 0) continue;
       const cur = acc.get(tag.id) ?? { name: tag.name, weightedSum: 0, weight: 0, count: 0 };

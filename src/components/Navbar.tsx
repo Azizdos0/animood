@@ -7,6 +7,7 @@ import type { ComponentType } from "react";
 import {
   HomeIcon, SearchIcon, SparklesIcon, BookmarkIcon, ChartIcon,
 } from "@/components/icons";
+import { AuthButton } from "@/components/AuthButton";
 
 interface NavItem {
   href: Route;
@@ -55,10 +56,7 @@ export function Navbar() {
         </nav>
 
         <div className="ml-auto flex items-center gap-3">
-          <div className="mono flex items-center gap-2 rounded-full border border-border-strong px-3.5 py-2 text-[11px] text-muted-foreground">
-            <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-violet" />
-            <span>SYNCED · LOCAL</span>
-          </div>
+          <AuthButton />
         </div>
       </header>
 

@@ -1,8 +1,8 @@
 create table if not exists public.list_entries (
   user_id    uuid        not null references auth.users(id) on delete cascade,
   media_id   integer     not null,
-  status     text        not null,
-  score      integer,
+  status     text        not null check (status in ('watching','completed','planning','dropped','onhold')),
+  score      integer     check (score is null or (score between 1 and 10)),
   progress   integer     not null default 0,
   updated_at timestamptz not null default now(),
   primary key (user_id, media_id)

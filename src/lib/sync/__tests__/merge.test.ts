@@ -39,6 +39,23 @@ describe("mergeLists", () => {
     expect(merged.entries[1].score).toBe(10);
   });
 
+  it("compares instants numerically across serializations (offset-form cloud wins)", () => {
+    // Cloud comes back in PostgREST offset form; local is the JS toISOString Z form.
+    const local = store({ 1: { status: "watching", score: 5, progress: 3, updatedAt: "2026-01-02T00:00:00.000Z" } });
+    const cloud = [row(1, "2026-01-03T00:00:00+00:00", { status: "completed", score: 10, progress: 12 })];
+    const merged = mergeLists(local, cloud);
+    expect(merged.entries[1].score).toBe(10); // newer cloud instant wins
+  });
+
+  it("does not let a lexicographically-larger offset string beat a later instant", () => {
+    // Cloud string "…23:00:00+05:30" sorts after local "…18:00:00.000Z" as raw
+    // text, but is the EARLIER instant (17:30Z vs 18:00Z) — local must win.
+    const local = store({ 1: { status: "watching", score: 5, progress: 3, updatedAt: "2026-01-02T18:00:00.000Z" } });
+    const cloud = [row(1, "2026-01-02T23:00:00+05:30", { status: "completed", score: 10, progress: 12 })];
+    const merged = mergeLists(local, cloud);
+    expect(merged.entries[1].score).toBe(5); // later local instant wins
+  });
+
   it("handles empty local and empty cloud", () => {
     expect(Object.keys(mergeLists(store({}), []).entries)).toHaveLength(0);
     const cloud = [row(9, "2026-01-01T00:00:00.000Z")];

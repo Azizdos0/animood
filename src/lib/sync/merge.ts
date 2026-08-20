@@ -32,7 +32,10 @@ export function mergeLists(local: ListStoreV1, cloud: CloudRow[]): ListStoreV1 {
   for (const row of cloud) {
     const { mediaId, entry } = rowToEntry(row);
     const existing = entries[mediaId];
-    if (!existing || row.updated_at > existing.updatedAt) {
+    if (
+      !existing
+      || new Date(row.updated_at).getTime() > new Date(existing.updatedAt).getTime()
+    ) {
       entries[mediaId] = entry;
     }
   }

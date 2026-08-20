@@ -7,7 +7,16 @@ export async function GET(request: Request): Promise<Response> {
   const code = url.searchParams.get("code");
   if (code && isSupabaseConfigured()) {
     const supabase = await supabaseServer();
-    await supabase.auth.exchangeCodeForSession(code);
+    try {
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
+      if (error) {
+        console.error("auth callback: exchangeCodeForSession failed", error);
+        return NextResponse.redirect(new URL("/?authError=1", url.origin));
+      }
+    } catch (err) {
+      console.error("auth callback: exchangeCodeForSession threw", err);
+      return NextResponse.redirect(new URL("/?authError=1", url.origin));
+    }
   }
   return NextResponse.redirect(new URL("/", url.origin));
 }

@@ -1,4 +1,4 @@
-import type { ListStoreV1 } from "@/lib/list/schema";
+import type { ListEntry } from "@/lib/list/schema";
 import type { CloudRow } from "./merge";
 import { entryToRow } from "./merge";
 
@@ -15,27 +15,32 @@ export async function pullCloud(supabase: SupaLike, userId: string): Promise<Clo
   return (data ?? []) as CloudRow[];
 }
 
-export async function reconcileCloud(
+/**
+ * Diff-based upsert: writes exactly the given rows (added/changed entries).
+ * Never deletes — so one device's additions can never clobber another's.
+ * No-op when there is nothing to push.
+ */
+export async function pushEntries(
   supabase: SupaLike,
   userId: string,
-  store: ListStoreV1
+  entries: { mediaId: number; entry: ListEntry }[]
 ): Promise<void> {
-  const rows = Object.entries(store.entries).map(([id, entry]) =>
-    entryToRow(userId, Number(id), entry)
-  );
+  if (entries.length === 0) return;
+  const rows = entries.map(({ mediaId, entry }) => entryToRow(userId, mediaId, entry));
+  const up = await supabase.from(TABLE).upsert(rows, { onConflict: "user_id,media_id" });
+  if (up?.error) throw up.error;
+}
 
-  if (rows.length > 0) {
-    const up = await supabase.from(TABLE).upsert(rows, { onConflict: "user_id,media_id" });
-    if (up?.error) throw up.error;
-    const ids = rows.map((r) => r.media_id).join(",");
-    const del = await supabase
-      .from(TABLE)
-      .delete()
-      .eq("user_id", userId)
-      .not("media_id", "in", `(${ids})`);
-    if (del?.error) throw del.error;
-  } else {
-    const del = await supabase.from(TABLE).delete().eq("user_id", userId);
-    if (del?.error) throw del.error;
-  }
+/**
+ * Deletes only the specified rows (the user's own explicit removals).
+ * No-op when there is nothing to delete.
+ */
+export async function deleteEntries(
+  supabase: SupaLike,
+  userId: string,
+  mediaIds: number[]
+): Promise<void> {
+  if (mediaIds.length === 0) return;
+  const del = await supabase.from(TABLE).delete().eq("user_id", userId).in("media_id", mediaIds);
+  if (del?.error) throw del.error;
 }

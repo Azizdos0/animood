@@ -25,4 +25,18 @@ describe("AuthButton", () => {
     render(<AuthButton />);
     expect(screen.getByText(/synced · local/i)).toBeInTheDocument();
   });
+
+  it("renders the avatar image when avatarUrl is present", () => {
+    mockState = { ...mockState, user: { email: "a@b.com", avatarUrl: "https://example.com/a.png" }, configured: true };
+    render(<AuthButton />);
+    const img = screen.getByRole("img", { name: /a@b\.com/i });
+    expect(img).toHaveAttribute("src", "https://example.com/a.png");
+  });
+
+  it("shows the gradient initial when no avatarUrl", () => {
+    mockState = { ...mockState, user: { email: "zed@b.com", avatarUrl: null }, configured: true };
+    render(<AuthButton />);
+    expect(screen.queryByRole("img")).toBeNull();
+    expect(screen.getByText("Z")).toBeInTheDocument();
+  });
 });

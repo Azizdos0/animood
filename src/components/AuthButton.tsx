@@ -36,9 +36,18 @@ export function AuthButton() {
         type="button"
         onClick={() => signOut()}
         title={user.email ?? "Signed in"}
-        className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-pink to-violet text-[12px] font-black text-on-accent"
+        className="grid h-8 w-8 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-pink to-violet text-[12px] font-black text-on-accent"
       >
-        {(user.email ?? "?").slice(0, 1).toUpperCase()}
+        {user.avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={user.avatarUrl}
+            alt={user.email ?? "Account"}
+            className="h-8 w-8 rounded-full object-cover"
+          />
+        ) : (
+          (user.email ?? "?").slice(0, 1).toUpperCase()
+        )}
       </button>
     </div>
   );

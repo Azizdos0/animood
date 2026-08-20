@@ -12,6 +12,7 @@ export interface ListEntry {
   score: number | null; // 1–10 or null
   progress: number;      // >= 0
   updatedAt: string;     // ISO timestamp
+  isFavorite: boolean;
 }
 
 export interface ListStoreV1 {
@@ -50,6 +51,7 @@ function isValidEntry(value: unknown): value is ListEntry {
     return false;
   }
   if (typeof e.updatedAt !== "string") return false;
+  if (e.isFavorite !== undefined && typeof e.isFavorite !== "boolean") return false;
   return true;
 }
 
@@ -81,7 +83,7 @@ export function sanitizeStore(value: unknown): ListStoreV1 {
     if (!NUMERIC_KEY_RE.test(key)) continue;
     const candidate = rawEntries[key];
     if (isValidEntry(candidate)) {
-      entries[Number(key)] = candidate;
+      entries[Number(key)] = { ...candidate, isFavorite: (candidate as ListEntry).isFavorite === true };
     }
   }
   return { version: CURRENT_LIST_VERSION, entries };

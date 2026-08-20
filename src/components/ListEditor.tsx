@@ -3,6 +3,7 @@
 import { LIST_STATUSES, type ListStatus } from "@/lib/list/schema";
 import { STATUS_LABELS } from "@/lib/list/labels";
 import { useListEntry, setEntry, deleteEntry } from "@/lib/list/reactive";
+import { StarIcon } from "@/components/icons";
 
 const SCORES = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
 
@@ -74,6 +75,21 @@ export function ListEditor({ mediaId }: { mediaId: number }) {
           className={`${controlClass} w-24`}
         />
       </label>
+
+      <button
+        type="button"
+        aria-pressed={entry.isFavorite}
+        aria-label={entry.isFavorite ? "Unfavorite" : "Favorite"}
+        onClick={() => setEntry(mediaId, { isFavorite: !entry.isFavorite })}
+        className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+          entry.isFavorite
+            ? "border-pink bg-pink/10 text-pink"
+            : "border-border text-muted-foreground hover:border-foreground"
+        }`}
+      >
+        <StarIcon filled={entry.isFavorite} size={16} />
+        {entry.isFavorite ? "Favorited" : "Favorite"}
+      </button>
 
       <button
         type="button"

@@ -11,7 +11,7 @@ function media(id: number, opts: Partial<Media> = {}): Media {
     averageScore: 70, popularity: 1000, seasonYear: 2020, relations: [], ...opts,
   };
 }
-const e = (status: ListStatus, score: number | null): ListEntry => ({ status, score, progress: 0, updatedAt: "" });
+const e = (status: ListStatus, score: number | null): ListEntry => ({ status, score, progress: 0, updatedAt: "", isFavorite: false });
 const se = (m: Media, en: ListEntry): StatEntry => ({ media: m, entry: en });
 
 describe("genreBreakdown", () => {

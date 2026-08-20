@@ -94,5 +94,21 @@ describe("list schema", () => {
       } };
       expect(sanitizeStore(value).entries).toEqual({});
     });
+
+    it("defaults isFavorite to false when absent (back-compat)", () => {
+      const store = sanitizeStore({
+        version: 1,
+        entries: { 5: { status: "completed", score: 9, progress: 12, updatedAt: "2026-01-01T00:00:00Z" } },
+      });
+      expect(store.entries[5].isFavorite).toBe(false);
+    });
+
+    it("preserves isFavorite=true", () => {
+      const store = sanitizeStore({
+        version: 1,
+        entries: { 5: { status: "completed", score: 9, progress: 12, updatedAt: "2026-01-01T00:00:00Z", isFavorite: true } },
+      });
+      expect(store.entries[5].isFavorite).toBe(true);
+    });
   });
 });

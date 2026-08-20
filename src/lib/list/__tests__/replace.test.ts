@@ -7,7 +7,7 @@ describe("replaceStore", () => {
 
   it("replaces the whole store and preserves updatedAt", () => {
     const store: ListStoreV1 = { version: 1, entries: {
-      5: { status: "completed", score: 9, progress: 12, updatedAt: "2026-01-01T00:00:00.000Z" },
+      5: { status: "completed", score: 9, progress: 12, updatedAt: "2026-01-01T00:00:00.000Z", isFavorite: false },
     } };
     replaceStore(store);
     expect(loadStore().entries[5].updatedAt).toBe("2026-01-01T00:00:00.000Z");

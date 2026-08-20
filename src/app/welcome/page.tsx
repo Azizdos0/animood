@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { WelcomeForm } from "@/components/WelcomeForm";
 import { PageHead } from "@/components/editorial";
 
@@ -7,7 +8,9 @@ export default function WelcomePage() {
       <PageHead kicker="ONE LAST STEP" accent="violet">
         Claim your username
       </PageHead>
-      <WelcomeForm />
+      <Suspense fallback={null}>
+        <WelcomeForm />
+      </Suspense>
     </div>
   );
 }

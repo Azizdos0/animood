@@ -60,6 +60,8 @@ export function WelcomeForm() {
 
       await refreshProfile();
       router.replace(next ?? "/");
+    } catch {
+      setError("Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
     }

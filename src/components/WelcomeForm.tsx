@@ -14,6 +14,9 @@ const ERROR_COPY: Record<UsernameError, string> = {
   reserved: "That username is reserved.",
 };
 
+const safeNext = (n: string | null): string =>
+  n && n.startsWith("/") && !n.startsWith("//") ? n : "/";
+
 export function WelcomeForm() {
   const { user, refreshProfile } = useAuth();
   const router = useRouter();
@@ -59,7 +62,7 @@ export function WelcomeForm() {
       }
 
       await refreshProfile();
-      router.replace(next ?? "/");
+      router.replace(safeNext(next));
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {

@@ -23,6 +23,15 @@ export async function getProfileByUsername(supabase: SupaLike, username: string)
   return data ? profileRowToProfile(data as ProfileRow) : null;
 }
 
+export async function getProfileCard(supabase: SupaLike, username: string): Promise<Profile | null> {
+  const { data, error } = await supabase.rpc("get_profile_card", {
+    p_username: username.trim().toLowerCase(),
+  });
+  if (error) throw error;
+  const row = (data ?? [])[0] as ProfileRow | undefined;
+  return row ? profileRowToProfile(row) : null;
+}
+
 export async function getProfileByUserId(supabase: SupaLike, userId: string): Promise<Profile | null> {
   const { data, error } = await supabase.from(TABLE)
     .select("*").eq("user_id", userId).maybeSingle();

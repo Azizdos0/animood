@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import {
-  getProfileByUsername, createProfile, setProfileVisibility,
+  getProfileByUsername, getProfileCard, createProfile, setProfileVisibility,
 } from "@/lib/profile/queries";
 
 const ROW = {
@@ -30,6 +30,25 @@ describe("getProfileByUsername", () => {
       maybeSingle: async () => ({ data: null, error: null }),
     };
     expect(await getProfileByUsername(fakeSupabase(q), "nope")).toBeNull();
+  });
+});
+
+describe("getProfileCard", () => {
+  it("maps the first row returned by the RPC to a Profile", async () => {
+    const supabase = { rpc: async () => ({ data: [ROW], error: null }) } as never;
+    const profile = await getProfileCard(supabase, "Aziz");
+    expect(profile).toEqual({
+      userId: "u1", username: "aziz", displayName: "Aziz",
+      avatarUrl: null, isPublic: true, createdAt: "2026-08-20T00:00:00.000Z",
+    });
+  });
+  it("returns null when the RPC returns no rows", async () => {
+    const supabase = { rpc: async () => ({ data: [], error: null }) } as never;
+    expect(await getProfileCard(supabase, "ghost")).toBeNull();
+  });
+  it("throws when the RPC errors", async () => {
+    const supabase = { rpc: async () => ({ data: null, error: { message: "x" } }) } as never;
+    await expect(getProfileCard(supabase, "aziz")).rejects.toBeTruthy();
   });
 });
 

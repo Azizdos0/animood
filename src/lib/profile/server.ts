@@ -2,7 +2,7 @@ import type { ListEntry } from "@/lib/list/schema";
 import type { CloudRow } from "@/lib/sync/types";
 import { rowToEntry } from "@/lib/sync/merge";
 import { supabaseServer } from "@/lib/supabase/server";
-import { getProfileByUsername } from "@/lib/profile/queries";
+import { getProfileCard } from "@/lib/profile/queries";
 import type { Profile } from "@/lib/profile/types";
 
 export function entriesFromRows(rows: CloudRow[]): Record<number, ListEntry> {
@@ -21,7 +21,7 @@ export type ProfilePageState =
 
 export async function loadProfilePage(username: string): Promise<ProfilePageState> {
   const supabase = await supabaseServer();
-  const profile = await getProfileByUsername(supabase as never, username);
+  const profile = await getProfileCard(supabase as never, username);
   if (!profile) return { state: "not_found" };
   const { data } = await supabase.auth.getUser();
   const isOwner = data.user?.id === profile.userId;

@@ -12,7 +12,7 @@ const profile = {
 vi.mock("@/lib/supabase/server", () => ({
   supabaseServer: async () => ({ auth: { getUser: async () => ({ data: { user: null } }) } }),
 }));
-vi.mock("@/lib/profile/queries", () => ({ getProfileByUsername: async () => currentProfile }));
+vi.mock("@/lib/profile/queries", () => ({ getProfileCard: async () => currentProfile }));
 vi.mock("@/lib/sync/cloud", () => ({
   pullCloud: async () => [
     { user_id: "u1", media_id: 1, status: "completed", score: 9, progress: 12, updated_at: "2026-01-01T00:00:00Z", is_favorite: true },
@@ -47,6 +47,7 @@ describe("loadProfilePage", () => {
     expect(res.state).toBe("private");
     if (res.state === "private") {
       expect(res.isOwner).toBe(false);
+      expect(res.profile.isPublic).toBe(false);
     }
   });
 });

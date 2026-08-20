@@ -29,7 +29,7 @@ export function formatBreakdown(entries: StatEntry[]): Count[] {
 
 export function topTags(entries: StatEntry[], n = 12): Count[] {
   const names = entries.flatMap((e) =>
-    (e.media.tags ?? []).filter((t) => t.rank >= TAG_PRESENT_RANK).map((t) => t.name)
+    e.media.tags.filter((t) => t.rank >= TAG_PRESENT_RANK).map((t) => t.name)
   );
   return tally(names).slice(0, n);
 }

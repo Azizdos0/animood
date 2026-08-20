@@ -5,7 +5,28 @@ import type { ListEntry } from "@/lib/list/schema";
 
 beforeEach(() => {
   global.fetch = vi.fn(async () => ({
-    ok: true, json: async () => ({ items: [{ id: 1, title: "X", type: "ANIME", genres: ["Action"], episodes: 12, coverImage: null }] }),
+    ok: true,
+    json: async () => ({
+      items: [
+        {
+          id: 1,
+          title: "X",
+          type: "ANIME",
+          coverImage: null,
+          bannerImage: null,
+          description: null,
+          genres: ["Action"],
+          tags: [],
+          format: "TV",
+          episodes: 12,
+          chapters: null,
+          averageScore: null,
+          popularity: 0,
+          seasonYear: null,
+          relations: [],
+        },
+      ],
+    }),
   })) as never;
 });
 

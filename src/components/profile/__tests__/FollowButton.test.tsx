@@ -25,4 +25,12 @@ describe("FollowButton", () => {
     await userEvent.click(screen.getByRole("button", { name: /following/i }));
     expect(unfollowUser).toHaveBeenCalledWith(expect.anything(), "viewer", "target");
   });
+
+  it("reverts the optimistic flip when followUser rejects", async () => {
+    followUser.mockRejectedValueOnce(new Error("boom"));
+    render(<FollowButton targetUserId="target" initialFollowing={false} />);
+    const btn = screen.getByRole("button", { name: /^follow$/i });
+    await userEvent.click(btn);
+    expect(await screen.findByRole("button", { name: /^follow$/i })).toBeInTheDocument();
+  });
 });

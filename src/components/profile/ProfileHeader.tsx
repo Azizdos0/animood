@@ -6,7 +6,15 @@ function formatJoinDate(createdAt: string): string {
   return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 }
 
-export function ProfileHeader({ profile, isOwner }: { profile: Profile; isOwner: boolean }) {
+export function ProfileHeader({
+  profile,
+  isOwner,
+  followCounts,
+}: {
+  profile: Profile;
+  isOwner: boolean;
+  followCounts: { followers: number; following: number };
+}) {
   const name = profile.displayName ?? profile.username;
   const initial = (name || "?").slice(0, 1).toUpperCase();
   const joinDate = formatJoinDate(profile.createdAt);
@@ -37,7 +45,9 @@ export function ProfileHeader({ profile, isOwner }: { profile: Profile; isOwner:
         <div className="mono mt-0.5 text-[12px] text-muted-2">@{profile.username}</div>
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-muted-foreground">
           {joinDate ? <span>Joined {joinDate}</span> : null}
-          <span className="mono">0 followers · 0 following</span>
+          <span className="mono">
+            {followCounts.followers} followers · {followCounts.following} following
+          </span>
         </div>
       </div>
     </div>

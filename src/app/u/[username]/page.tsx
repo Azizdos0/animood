@@ -3,6 +3,7 @@ import { loadProfilePage, type ProfilePageState } from "@/lib/profile/server";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileOwnerBar } from "@/components/profile/ProfileOwnerBar";
 import { ProfileContent } from "@/components/profile/ProfileContent";
+import { FollowButton } from "@/components/profile/FollowButton";
 
 export default async function ProfilePage({
   params,
@@ -18,7 +19,7 @@ export default async function ProfilePage({
 
   return (
     <div className="mx-auto max-w-[1560px] space-y-8 px-6 py-12 sm:px-10">
-      <ProfileHeader profile={res.profile} isOwner={res.isOwner} />
+      <ProfileHeader profile={res.profile} isOwner={res.isOwner} followCounts={res.followCounts} />
 
       {res.state === "private" ? (
         <div className="rounded-2xl border border-dashed border-border bg-surface/40 p-10 text-center">
@@ -31,7 +32,9 @@ export default async function ProfilePage({
         <>
           {res.isOwner ? (
             <ProfileOwnerBar userId={res.profile.userId} isPublic={res.profile.isPublic} />
-          ) : null}
+          ) : (
+            <FollowButton targetUserId={res.profile.userId} initialFollowing={res.viewerFollows} />
+          )}
           <ProfileContent entries={res.entries} />
         </>
       )}

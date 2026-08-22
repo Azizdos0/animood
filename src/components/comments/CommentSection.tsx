@@ -198,6 +198,8 @@ export function CommentSection({ mediaId }: { mediaId: number }) {
             onChange={(e) => setBody(e.target.value)}
             placeholder="Share your thoughts..."
             rows={3}
+            maxLength={2000}
+            aria-label="Add a comment"
             className="w-full rounded-2xl border border-border bg-surface/40 p-3 text-sm outline-none focus:border-border-strong"
           />
           <div className="flex items-center justify-between gap-2">

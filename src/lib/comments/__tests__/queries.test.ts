@@ -2,20 +2,20 @@ import { describe, it, expect, vi } from "vitest";
 import { listComments, addComment, deleteComment } from "@/lib/comments/queries";
 
 describe("listComments", () => {
-  it("maps rows with embedded profile and drops profile-less rows", async () => {
+  it("maps flat rows returned by the get_media_comments RPC", async () => {
     const rows = [
       { id: "c1", media_id: 5, user_id: "u1", body: "hi", created_at: "2026-02-01T00:00:00Z",
-        profiles: { username: "friend", display_name: "Friend", avatar_url: null } },
-      { id: "c2", media_id: 5, user_id: "u2", body: "orphan", created_at: "2026-01-01T00:00:00Z", profiles: null },
+        username: "friend", display_name: "Friend", avatar_url: null },
     ];
-    const q: Record<string, unknown> = {
-      select: () => q, eq: () => q, order: () => q,
-      limit: async () => ({ data: rows, error: null }),
-    };
-    const supabase = { from: () => q } as never;
+    const rpc = vi.fn(async () => ({ data: rows, error: null }));
+    const supabase = { rpc } as never;
     const items = await listComments(supabase, 5);
+    expect(rpc).toHaveBeenCalledWith("get_media_comments", { p_media_id: 5, p_limit: 100 });
     expect(items).toHaveLength(1);
-    expect(items[0]).toMatchObject({ id: "c1", mediaId: 5, username: "friend", body: "hi" });
+    expect(items[0]).toMatchObject({
+      id: "c1", mediaId: 5, userId: "u1", username: "friend",
+      displayName: "Friend", avatarUrl: null, body: "hi", createdAt: "2026-02-01T00:00:00Z",
+    });
   });
 });
 

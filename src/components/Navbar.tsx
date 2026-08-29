@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import type { Route } from "next";
 import type { ComponentType } from "react";
 import {
-  HomeIcon, SearchIcon, SparklesIcon, BookmarkIcon, ChartIcon, InboxIcon,
+  HomeIcon, SearchIcon, SparklesIcon, BookmarkIcon, ChartIcon, InboxIcon, CompassIcon,
 } from "@/components/icons";
 import { AuthButton } from "@/components/AuthButton";
 
@@ -20,6 +20,7 @@ const NAV: NavItem[] = [
   { href: "/search", label: "Search", Icon: SearchIcon },
   { href: "/recommendations", label: "For You", Icon: SparklesIcon },
   { href: "/feed", label: "Feed", Icon: InboxIcon },
+  { href: "/users", label: "People", Icon: CompassIcon },
   { href: "/my-list", label: "My List", Icon: BookmarkIcon },
   { href: "/stats", label: "Stats", Icon: ChartIcon },
 ];
@@ -63,7 +64,7 @@ export function Navbar() {
 
       {/* Mobile bottom nav */}
       <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/90 backdrop-blur-xl sm:hidden">
-        <div className="mx-auto grid max-w-md grid-cols-6">
+        <div className="mx-auto grid max-w-md grid-cols-7">
           {NAV.map(({ href, label, Icon }) => {
             const active = isActive(pathname, href);
             return (

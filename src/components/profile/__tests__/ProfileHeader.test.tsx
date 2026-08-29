@@ -14,8 +14,11 @@ describe("ProfileHeader", () => {
     expect(screen.getByText(/0 followers/i)).toBeInTheDocument();
   });
 
-  it("renders real follow counts", () => {
+  it("renders real follow counts as links to the followers and following lists", () => {
     render(<ProfileHeader profile={profile} isOwner={false} followCounts={{ followers: 12, following: 3 }} />);
-    expect(screen.getByText(/12 followers · 3 following/i)).toBeInTheDocument();
+    const followersLink = screen.getByRole("link", { name: /12 followers/i });
+    expect(followersLink).toHaveAttribute("href", "/u/aziz/followers");
+    const followingLink = screen.getByRole("link", { name: /3 following/i });
+    expect(followingLink).toHaveAttribute("href", "/u/aziz/following");
   });
 });

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Profile } from "@/lib/profile/types";
 
 function formatJoinDate(createdAt: string): string {
@@ -46,7 +47,9 @@ export function ProfileHeader({
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-muted-foreground">
           {joinDate ? <span>Joined {joinDate}</span> : null}
           <span className="mono">
-            {followCounts.followers} followers · {followCounts.following} following
+            <Link href={`/u/${profile.username}/followers`} className="hover:text-foreground">{followCounts.followers} followers</Link>
+            {" · "}
+            <Link href={`/u/${profile.username}/following`} className="hover:text-foreground">{followCounts.following} following</Link>
           </span>
         </div>
       </div>

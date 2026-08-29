@@ -1,0 +1,23 @@
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { loadFollowList } from "@/lib/discover/server";
+import { UserCard } from "@/components/discover/UserCard";
+
+export default async function FollowingPage({ params }: { params: Promise<{ username: string }> }) {
+  const { username } = await params;
+  const res = await loadFollowList(username, "following").catch(() => ({ state: "not_found" as const }));
+  if (res.state === "not_found") notFound();
+  return (
+    <div className="mx-auto max-w-[1560px] space-y-6 px-6 py-12 sm:px-10">
+      <Link href={`/u/${res.profile.username}`} className="mono text-[12px] text-muted-2 hover:text-foreground">← @{res.profile.username}</Link>
+      <h1 className="font-display text-2xl font-bold tracking-tight">@{res.profile.username} is following</h1>
+      {res.users.length === 0 ? (
+        <p className="mono rounded-2xl border border-dashed border-border py-12 text-center text-xs tracking-[0.12em] text-muted-2">NOT FOLLOWING ANYONE YET</p>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {res.users.map((u) => <UserCard key={u.username} user={u} />)}
+        </div>
+      )}
+    </div>
+  );
+}

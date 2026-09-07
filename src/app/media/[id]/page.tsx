@@ -5,6 +5,7 @@ import { ListEditor } from "@/components/ListEditor";
 import { MediaCard } from "@/components/MediaCard";
 import { SectionHead } from "@/components/editorial";
 import { CommentSection } from "@/components/comments/CommentSection";
+import { DiscussionBoard } from "@/components/discussions/DiscussionBoard";
 
 export default async function MediaDetailPage({
   params,
@@ -116,6 +117,10 @@ export default async function MediaDetailPage({
           </div>
         </aside>
       </div>
+
+      <section className="mx-auto max-w-[1560px] px-6 sm:px-10">
+        <DiscussionBoard mediaId={media.id} />
+      </section>
 
       <section className="mx-auto max-w-[1560px] px-6 pb-16 sm:px-10">
         <CommentSection mediaId={media.id} />

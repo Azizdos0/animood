@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getMediaById } from "@/lib/anilist/media";
 import { loadThread } from "@/lib/discussions/server";
 import { ThreadView } from "@/components/discussions/ThreadView";
+import { ThreadDeleteButton } from "@/components/discussions/ThreadDeleteButton";
 
 function relativeTime(iso: string): string {
   const then = new Date(iso).getTime();
@@ -55,7 +56,10 @@ export default async function ThreadPage({
       </Link>
 
       <div className="rounded-2xl border border-border bg-surface/40 p-5 sm:p-6">
-        <h1 className="text-[22px] font-black tracking-[-0.02em]">{thread.title}</h1>
+        <div className="flex items-start justify-between gap-3">
+          <h1 className="text-[22px] font-black tracking-[-0.02em]">{thread.title}</h1>
+          <ThreadDeleteButton threadId={threadId} mediaId={mediaId} authorId={thread.userId} />
+        </div>
         <div className="mono mt-1.5 text-[12px] text-muted-2">
           @{thread.username} · {relativeTime(thread.createdAt)}
         </div>

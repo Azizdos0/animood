@@ -15,11 +15,57 @@ const req = (body: unknown) =>
   new Request("http://x/api/recommendations", { method: "POST", body: JSON.stringify(body) });
 
 describe("/api/recommendations", () => {
-  beforeEach(() => vi.restoreAllMocks());
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.spyOn(media, "searchMedia").mockResolvedValue({ items: [m(100, [])], hasNextPage: false });
+  });
 
-  it("returns coldStart when no scored titles", async () => {
+  it("offers discovery picks even when there are no scored titles", async () => {
     const res = await POST(req({ list: [{ id: 1, score: null, status: "planning" }] }));
-    expect(await res.json()).toEqual({ profile: null, pool: [], coldStart: true });
+    const body = await res.json();
+    expect(body.coldStart).toBe(true);
+    expect(body.pool[0].media.id).toBe(100);
+  });
+
+  it("fetches candidates for the chosen mood and media type", async () => {
+    vi.spyOn(media, "searchMedia").mockResolvedValue({ items: [{ ...m(100, []), type: "MANGA", genres: ["Slice of Life"] }, m(101, [])], hasNextPage: false });
+    const res = await POST(req({ list: [], mood: "calm", type: "MANGA" }));
+    expect(res.status).toBe(200);
+    expect(media.searchMedia).toHaveBeenCalledWith(expect.objectContaining({ type: "MANGA", genre: "Slice of Life" }));
+    expect((await res.json()).pool.map((c: { media: { id: number } }) => c.media.id)).toEqual([100]);
+  });
+
+  it("uses starter favorites to learn taste while excluding them from the results", async () => {
+    vi.spyOn(media, "getMediaByIds").mockImplementation(async ids => ids.map(id => m(id, [[10, "Found Family", 100]])));
+    vi.spyOn(media, "getRecommendationsFor").mockResolvedValue([]);
+    vi.spyOn(media, "searchMedia").mockResolvedValue({ items: [m(1, []), m(100, [[10, "Found Family", 100]])], hasNextPage: false });
+    const res = await POST(req({ list: [], seeds: [1, 2, 3] }));
+    const body = await res.json();
+    expect(body.profile.ratedCount).toBe(0);
+    expect(body.profile.tags[10].affinity).toBeGreaterThan(0);
+    expect(body.pool.map((c: { media: { id: number } }) => c.media.id)).toEqual([100]);
+    expect(body.pool[0].tagMatch).toBeGreaterThan(0);
+  });
+
+  it("keeps working when a community recommendation source fails", async () => {
+    vi.spyOn(media, "getMediaByIds").mockImplementation(async ids => ids.map(id => m(id, [])));
+    vi.spyOn(media, "getRecommendationsFor").mockRejectedValue(new Error("unavailable"));
+    const res = await POST(req({ list: [{ id: 1, score: 9, status: "completed" }], mood: "calm" }));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.pool.length).toBeGreaterThan(0);
+    expect(body.partial).toBe(true);
+  });
+
+  it("returns a retryable error when no catalog source can be reached", async () => {
+    vi.spyOn(media, "searchMedia").mockRejectedValue(new Error("offline"));
+    expect((await POST(req({ list: [], mood: "calm" }))).status).toBe(502);
+  });
+
+  it("rejects invalid request entries before accessing AniList", async () => {
+    const res = await POST(req({ list: [null], mood: "not-a-mood" }));
+    expect(res.status).toBe(400);
+    expect(media.searchMedia).not.toHaveBeenCalled();
   });
 
   it("returns a scored pool for a rated list", async () => {

@@ -10,10 +10,24 @@ export interface SupaLike {
 
 const TABLE = "list_entries";
 
-export async function pullCloud(supabase: SupaLike, userId: string): Promise<CloudRow[]> {
-  const { data, error } = await supabase.from(TABLE).select("*").eq("user_id", userId);
-  if (error) throw error;
-  return (data ?? []) as CloudRow[];
+export async function pullCloud(supabase: SupaLike, userId: string, signal?: AbortSignal): Promise<CloudRow[]> {
+  const rows: CloudRow[] = [];
+  let after = 0;
+  for (;;) {
+    let query = supabase.from(TABLE).select("*").eq("user_id", userId)
+      .order("media_id", { ascending: true }).limit(1000);
+    if (after) query = query.gt("media_id", after);
+    if (signal) query = query.abortSignal(signal);
+    const { data, error } = await query;
+    if (error) throw error;
+    const page = (data ?? []) as CloudRow[];
+    if (!page.length) return rows;
+    const next = page[page.length - 1].media_id;
+    if (next <= after) throw new Error("Cloud list pagination did not advance");
+    rows.push(...page);
+    after = next;
+    // Continue even if the project's row cap is lower than our page size.
+  }
 }
 
 /**
@@ -24,11 +38,14 @@ export async function pullCloud(supabase: SupaLike, userId: string): Promise<Clo
 export async function pushEntries(
   supabase: SupaLike,
   userId: string,
-  entries: { mediaId: number; entry: ListEntry }[]
+  entries: { mediaId: number; entry: ListEntry }[],
+  signal?: AbortSignal,
 ): Promise<void> {
   if (entries.length === 0) return;
   const rows = entries.map(({ mediaId, entry }) => entryToRow(userId, mediaId, entry));
-  const up = await supabase.from(TABLE).upsert(rows, { onConflict: "user_id,media_id" });
+  let query = supabase.from(TABLE).upsert(rows, { onConflict: "user_id,media_id" });
+  if (signal) query = query.abortSignal(signal);
+  const up = await query;
   if (up?.error) throw up.error;
 }
 
@@ -39,9 +56,12 @@ export async function pushEntries(
 export async function deleteEntries(
   supabase: SupaLike,
   userId: string,
-  mediaIds: number[]
+  mediaIds: number[],
+  signal?: AbortSignal,
 ): Promise<void> {
   if (mediaIds.length === 0) return;
-  const del = await supabase.from(TABLE).delete().eq("user_id", userId).in("media_id", mediaIds);
+  let query = supabase.from(TABLE).delete().eq("user_id", userId).in("media_id", mediaIds);
+  if (signal) query = query.abortSignal(signal);
+  const del = await query;
   if (del?.error) throw del.error;
 }

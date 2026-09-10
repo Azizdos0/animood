@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useAuth } from "@/components/SyncProvider";
 
 export function AuthButton() {
-  const { user, configured, signIn, signOut, username } = useAuth();
+  const { user, configured, signIn, signOut, username, syncStatus, retrySync } = useAuth();
 
   if (!configured) {
     return (
@@ -42,10 +42,14 @@ export function AuthButton() {
     "grid h-8 w-8 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-pink to-violet text-[12px] font-black text-on-accent";
 
   return (
-    <div className="flex items-center gap-2.5">
-      <div className="mono hidden items-center gap-2 rounded-full border border-border-strong px-3.5 py-2 text-[11px] text-muted-foreground sm:flex">
-        <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-pink" />
-        <span>SYNCED · CLOUD</span>
+    <div className="flex flex-wrap items-center justify-end gap-2.5 sm:flex-nowrap">
+      <div role="status" className={`mono items-center gap-2 rounded-full border border-border-strong px-2 py-2 text-[10px] text-muted-foreground sm:px-3.5 sm:text-[11px] ${syncStatus === "error" ? "flex" : "hidden sm:flex"}`}>
+        <span className="pulse-dot hidden h-1.5 w-1.5 rounded-full bg-pink sm:block" />
+        <span>{syncStatus === "synced" ? "SYNCED · CLOUD" : syncStatus === "error" ? "SYNC PAUSED" : "SYNCING…"}</span>
+        {syncStatus === "error" && (
+          <button type="button" onClick={retrySync} aria-label="Retry sync" title="Your changes are pending. Retry cloud sync."
+            className="font-bold text-pink hover:underline">Retry</button>
+        )}
       </div>
       <button
         type="button"

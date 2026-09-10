@@ -5,6 +5,7 @@ import { emptyStore, type ListEntry, type ListStoreV1 } from "./schema";
 import {
   loadStore, upsertEntry, removeEntry, bulkUpsert,
   replaceStore as persistReplace, type BulkImportItem,
+  activateListAccount, saveSyncState,
 } from "./storage";
 
 let snapshot: ListStoreV1 | null = null;
@@ -59,6 +60,21 @@ export function replaceStore(store: ListStoreV1): void {
   emit();
 }
 
+export function setListAccount(userId: string | null): void {
+  try {
+    activateListAccount(userId);
+  } finally {
+    snapshot = loadStore();
+    emit();
+  }
+}
+
+export function replaceSyncedStore(store: ListStoreV1, baseline: ListStoreV1, pendingIds?: number[]): void {
+  saveSyncState(store, baseline, pendingIds);
+  snapshot = store;
+  emit();
+}
+
 export function useListStore(): ListStoreV1 {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
@@ -69,5 +85,6 @@ export function useListEntry(mediaId: number): ListEntry | null {
 }
 
 export function __resetListCacheForTests(): void {
+  activateListAccount(null);
   snapshot = null;
 }

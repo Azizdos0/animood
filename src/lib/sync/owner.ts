@@ -1,9 +1,8 @@
 const OWNER_KEY = "animood.list.owner";
 
 /**
- * Returns the userId that currently owns the local list, or null when the
- * list is anonymous (no signed-in owner). SSR-safe: returns null when there
- * is no `window`.
+ * Legacy shared-slot ownership marker, retained only for migration. New lists
+ * live in per-account storage keys. SSR-safe: returns null without `window`.
  */
 export function getListOwner(): string | null {
   if (typeof window === "undefined") return null;

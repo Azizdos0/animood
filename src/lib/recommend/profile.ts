@@ -12,7 +12,8 @@ export function buildTasteProfile(titles: RatedTitle[]): TasteProfile {
 
   for (const t of titles) {
     let signal: number | null = null;
-    if (t.score !== null) signal = t.score - meanScore;
+    if (t.preference === "liked") signal = 3;
+    else if (t.score !== null) signal = t.score - meanScore;
     else if (t.status === "dropped") signal = DROPPED_SIGNAL;
     if (signal === null) continue;
 

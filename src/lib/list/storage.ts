@@ -2,27 +2,87 @@ import {
   emptyStore, sanitizeStore, LIST_STATUSES, CURRENT_LIST_VERSION,
   type ListEntry, type ListStoreV1,
 } from "./schema";
+import { getListOwner, setListOwner } from "@/lib/sync/owner";
+import { entryToRow, mergeLists } from "@/lib/sync/merge";
 
 export const LIST_STORAGE_KEY = "animood.list.v1";
+let activeAccount: string | null = null;
+
+export function getListStorageScope(): string {
+  return listStorageKey(activeAccount);
+}
+
+export function listStorageKey(userId: string | null): string {
+  return userId === null ? LIST_STORAGE_KEY : `${LIST_STORAGE_KEY}.user:${encodeURIComponent(userId)}`;
+}
+
+/** Select a per-account namespace before doing any asynchronous work. */
+export function activateListAccount(userId: string | null): void {
+  activeAccount = userId;
+  if (!hasWindow()) return;
+  const raw = window.localStorage.getItem(LIST_STORAGE_KEY);
+  const owner = getListOwner();
+  if (!raw) { setListOwner(null); return; }
+  const target = owner ?? userId;
+  if (!target) return;
+
+  // Upgrade the old shared slot, or claim a genuinely anonymous list once.
+  // Mark ownership BEFORE copying so an interrupted migration cannot offer
+  // this list to a different account. Never clear the source before saving.
+  window.localStorage.setItem("animood.list.owner", target);
+  const key = listStorageKey(target);
+  const previous = readRecord(key);
+  let legacy: ListStoreV1;
+  try { legacy = sanitizeStore(JSON.parse(raw)); } catch { legacy = emptyStore(); }
+  const merged = mergeLists(previous.store, Object.entries(legacy.entries)
+    .map(([id, entry]) => entryToRow(target, Number(id), entry)));
+  window.localStorage.setItem(key, JSON.stringify({ ...merged, synced: previous.synced, pendingIds: previous.pendingIds }));
+  window.localStorage.removeItem(LIST_STORAGE_KEY);
+  setListOwner(null);
+}
 
 const hasWindow = (): boolean => typeof window !== "undefined";
 
-export function loadStore(): ListStoreV1 {
-  if (!hasWindow()) return emptyStore();
-  const raw = window.localStorage.getItem(LIST_STORAGE_KEY);
-  if (!raw) return emptyStore();
+function readRecord(key: string): { store: ListStoreV1; synced: ListStoreV1; pendingIds: number[] } {
   try {
-    const parsed: unknown = JSON.parse(raw);
-    return sanitizeStore(parsed);
+    const raw = hasWindow() ? window.localStorage.getItem(key) : null;
+    const parsed = raw ? JSON.parse(raw) : null;
+    return { store: sanitizeStore(parsed), synced: sanitizeStore(parsed?.synced),
+      pendingIds: Array.isArray(parsed?.pendingIds)
+        ? parsed.pendingIds.filter((id: unknown) => typeof id === "number" && Number.isInteger(id) && id > 0) : [] };
   } catch {
-    return emptyStore();
+    return { store: emptyStore(), synced: emptyStore(), pendingIds: [] };
   }
+}
+
+export function loadStore(): ListStoreV1 {
+  // Never expose an old account's shared-slot list while auth initializes.
+  if (activeAccount === null && getListOwner() !== null) return emptyStore();
+  return readRecord(listStorageKey(activeAccount)).store;
+}
+
+export function loadSyncBaseline(): ListStoreV1 {
+  return readRecord(listStorageKey(activeAccount)).synced;
+}
+
+export function loadPendingIds(): number[] {
+  return readRecord(listStorageKey(activeAccount)).pendingIds;
+}
+
+/** Store edits and their last acknowledged cloud state in one atomic write. */
+export function saveSyncState(store: ListStoreV1, synced: ListStoreV1, pendingIds = loadPendingIds()): void {
+  if (!hasWindow()) return;
+  if (activeAccount === null && getListOwner() !== null) {
+    throw new Error("Account list migration is pending");
+  }
+  const value = activeAccount === null ? store : { ...store, synced, pendingIds };
+  window.localStorage.setItem(listStorageKey(activeAccount), JSON.stringify(value));
 }
 
 export function saveStore(store: ListStoreV1): void {
   if (!hasWindow()) return;
   try {
-    window.localStorage.setItem(LIST_STORAGE_KEY, JSON.stringify(store));
+    saveSyncState(store, loadSyncBaseline());
   } catch (err) {
     // QuotaExceededError, Safari private-mode, etc. — never let a write crash the caller.
     console.warn("animood: failed to persist list store", err);

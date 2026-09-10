@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, act } from "@testing-library/react";
+import { render, act, cleanup } from "@testing-library/react";
 import type { CloudRow } from "@/lib/sync/merge";
 
 // Shared, mutable fake Supabase state (hoisted so the vi.mock factory can see it).
@@ -25,13 +25,22 @@ vi.mock("@/lib/supabase/client", () => ({
       signOut: async () => {},
     },
     from: () => ({
-      select: () => ({
-        eq: async () => { h.pullCount += 1; return { data: h.cloudRows, error: null }; },
-      }),
-      upsert: (rows: CloudRow[]) => { h.pushed.push(rows); return { error: null }; },
+      select: () => {
+        let after = 0;
+        const query = {
+          eq: () => query, order: () => query, limit: () => query, abortSignal: () => query,
+          gt: (_col: string, id: number) => { after = id; return query; },
+          then: (resolve: (value: unknown) => unknown) => {
+            h.pullCount++;
+            return Promise.resolve(resolve({ data: h.cloudRows.filter(row => row.media_id > after), error: null }));
+          },
+        };
+        return query;
+      },
+      upsert: (rows: CloudRow[]) => { h.pushed.push(rows); return { error: null, abortSignal: () => ({ error: null }) }; },
       delete: () => ({
         eq: () => ({
-          in: (_col: string, ids: number[]) => { h.deleted.push(ids); return Promise.resolve({ error: null }); },
+          in: (_col: string, ids: number[]) => { h.deleted.push(ids); return { error: null, abortSignal: () => ({ error: null }) }; },
         }),
       }),
     }),
@@ -41,7 +50,7 @@ vi.mock("@/lib/supabase/client", () => ({
 import { SyncProvider } from "@/components/SyncProvider";
 import { getListOwner, setListOwner } from "@/lib/sync/owner";
 import { LIST_STORAGE_KEY } from "@/lib/list/storage";
-import { __resetListCacheForTests } from "@/lib/list/reactive";
+import { __resetListCacheForTests, getSnapshot } from "@/lib/list/reactive";
 import { type ListEntry } from "@/lib/list/schema";
 
 const row = (media_id: number, over: Partial<CloudRow> = {}): CloudRow => ({
@@ -59,26 +68,26 @@ function seedLocal(entries: Record<number, ListEntry>) {
 }
 
 function readLocal(): Record<number, ListEntry> {
-  const raw = localStorage.getItem(LIST_STORAGE_KEY);
-  return raw ? JSON.parse(raw).entries : {};
+  return getSnapshot().entries;
 }
 
 async function signInAs(userId: string) {
   await act(async () => {
     h.authCb?.("SIGNED_IN", { user: { id: userId, email: `${userId}@x.com`, user_metadata: {} } });
-    await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+    await vi.advanceTimersByTimeAsync(0);
   });
 }
 
 beforeEach(() => {
   localStorage.clear();
   __resetListCacheForTests();
+  vi.useFakeTimers();
   h.authCb = null; h.cloudRows = []; h.pushed = []; h.deleted = []; h.pullCount = 0;
 });
-afterEach(() => { __resetListCacheForTests(); });
+afterEach(() => { cleanup(); vi.useRealTimers(); localStorage.clear(); __resetListCacheForTests(); });
 
 describe("SyncProvider (configured)", () => {
-  it("on sign-in over an anonymous local list: unions cloud, pushes all, tags owner", async () => {
+  it("claims an anonymous local list and uploads only local changes", async () => {
     seedLocal({ 1: entry({ status: "completed" }) });
     h.cloudRows = [row(2, { status: "planning" })];
     render(<SyncProvider>x</SyncProvider>);
@@ -87,10 +96,10 @@ describe("SyncProvider (configured)", () => {
 
     const local = readLocal();
     expect(Object.keys(local).sort()).toEqual(["1", "2"]); // union kept both
-    expect(getListOwner()).toBe("user-1");
-    // Whole merged list pushed (upsert), and nothing deleted on sign-in.
+    expect(getListOwner()).toBeNull(); // legacy shared slot has been migrated
+    // Cloud-only rows do not need rewriting.
     expect(h.pushed).toHaveLength(1);
-    expect(h.pushed[0].map((r) => r.media_id).sort()).toEqual([1, 2]);
+    expect(h.pushed[0].map((r) => r.media_id)).toEqual([1]);
     expect(h.deleted).toHaveLength(0);
   });
 
@@ -105,9 +114,8 @@ describe("SyncProvider (configured)", () => {
 
     const local = readLocal();
     expect(Object.keys(local)).toEqual(["5"]); // user-1's entry 1 is NOT unioned in
-    expect(getListOwner()).toBe("user-2");
-    // Only the cloud row is (re-)pushed; user-1's entry never reaches user-2's cloud.
-    expect(h.pushed[0].map((r) => r.media_id)).toEqual([5]);
+    expect(getListOwner()).toBeNull();
+    expect(h.pushed).toHaveLength(0); // user-1's entry never reaches user-2's cloud
   });
 
   it("ignores a duplicate SIGNED_IN for the same user (no redundant pull)", async () => {
@@ -121,11 +129,11 @@ describe("SyncProvider (configured)", () => {
     expect(h.pullCount).toBe(pullsAfterFirst); // guard short-circuits the second run
   });
 
-  it("on sign-out: clears the owner tag (back to anonymous local list)", async () => {
-    h.cloudRows = [];
+  it("on sign-out: exposes a separate empty guest list", async () => {
+    h.cloudRows = [row(1)];
     render(<SyncProvider>x</SyncProvider>);
     await signInAs("user-1");
-    expect(getListOwner()).toBe("user-1");
+    expect(readLocal()[1]).toBeDefined();
 
     await act(async () => {
       h.authCb?.("SIGNED_OUT", null);
@@ -133,5 +141,6 @@ describe("SyncProvider (configured)", () => {
     });
 
     expect(getListOwner()).toBeNull();
+    expect(readLocal()).toEqual({});
   });
 });

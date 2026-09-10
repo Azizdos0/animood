@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import type { SyncStatus } from "@/lib/sync/session";
 
 const signIn = vi.fn();
 let mockState = {
@@ -8,12 +9,29 @@ let mockState = {
   signIn,
   signOut: vi.fn(),
   username: null as string | null,
+  syncStatus: "synced" as SyncStatus,
+  retrySync: vi.fn(),
 };
 vi.mock("@/components/SyncProvider", () => ({ useAuth: () => mockState }));
 
 import { AuthButton } from "@/components/AuthButton";
 
 describe("AuthButton", () => {
+  it("shows pending sync and exposes retry when a cloud write fails", () => {
+    mockState = { ...mockState, user: { email: "a@b.com", avatarUrl: null }, configured: true, syncStatus: "error", retrySync: vi.fn() };
+    render(<AuthButton />);
+    expect(screen.queryByText(/synced · cloud/i)).toBeNull();
+    expect(screen.getByRole("status")).toHaveTextContent(/sync paused/i);
+    screen.getByRole("button", { name: /retry sync/i }).click();
+    expect(mockState.retrySync).toHaveBeenCalledOnce();
+  });
+
+  it("does not claim synced while writes are pending", () => {
+    mockState = { ...mockState, user: { email: "a@b.com", avatarUrl: null }, configured: true, syncStatus: "syncing" };
+    render(<AuthButton />);
+    expect(screen.getByRole("status")).toHaveTextContent(/syncing/i);
+    expect(screen.queryByText(/synced · cloud/i)).toBeNull();
+  });
   it("shows Sign in when configured and signed out", () => {
     mockState = { ...mockState, user: null, configured: true };
     render(<AuthButton />);
@@ -21,7 +39,7 @@ describe("AuthButton", () => {
   });
 
   it("shows the cloud-synced state when signed in", () => {
-    mockState = { ...mockState, user: { email: "a@b.com", avatarUrl: null }, configured: true };
+    mockState = { ...mockState, user: { email: "a@b.com", avatarUrl: null }, configured: true, syncStatus: "synced" };
     render(<AuthButton />);
     expect(screen.getByText(/synced · cloud/i)).toBeInTheDocument();
   });

@@ -5,6 +5,7 @@ export interface RatedTitle {
   media: Media;
   score: number | null;
   status: ListStatus;
+  preference?: "liked";
 }
 
 export interface TagAffinity {

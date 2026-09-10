@@ -9,12 +9,18 @@ function makeSupa() {
   } = { upsert: [], deleteIn: [] };
   const api = {
     from: () => api,
-    select: () => ({
-      eq: async () => ({
-        data: [{ user_id: "u1", media_id: 7, status: "watching", score: null, progress: 2, updated_at: "2026-01-01T00:00:00.000Z" }],
-        error: null,
-      }),
-    }),
+    select: () => {
+      let after = 0;
+      const query = {
+        eq: () => query, order: () => query, limit: () => query,
+        gt: (_col: string, id: number) => { after = id; return query; },
+        then: (resolve: (value: unknown) => unknown) => Promise.resolve(resolve({
+          data: after < 7 ? [{ user_id: "u1", media_id: 7, status: "watching", score: null, progress: 2, updated_at: "2026-01-01T00:00:00.000Z" }] : [],
+          error: null,
+        })),
+      };
+      return query;
+    },
     upsert: (rows: unknown, opts: unknown) => { calls.upsert.push({ rows, opts }); return { error: null }; },
     delete: () => ({
       eq: () => ({
@@ -31,6 +37,23 @@ const entry = (updatedAt: string, over: Partial<ListEntry> = {}): ListEntry => (
 });
 
 describe("pullCloud", () => {
+  it("reads past the server row cap before treating the cloud list as complete", async () => {
+    const all = Array.from({ length: 7 }, (_, i) => ({ user_id: "u1", media_id: i + 1 }));
+    const client = { from: () => {
+      let after = 0;
+      const query = {
+        select: () => query, eq: () => query, order: () => query, limit: () => query,
+        gt: (_col: string, id: number) => { after = id; return query; },
+        then: (resolve: (value: unknown) => unknown) => Promise.resolve(resolve({
+          data: all.filter(row => row.media_id > after).slice(0, 2), error: null,
+        })),
+      };
+      return query;
+    } };
+    const result = await pullCloud(client as never, "u1");
+    expect(result.map(row => row.media_id)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+  });
+
   it("returns the user's rows", async () => {
     const supa = makeSupa();
     const rows = await pullCloud(supa as never, "u1");

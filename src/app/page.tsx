@@ -26,17 +26,17 @@ function Hero({ anime }: { anime: Media[] }) {
             <span>TRACK · DISCOVER · OBSESS</span>
           </div>
           <h1 className="text-[clamp(48px,7.2vw,116px)] font-black leading-[0.88] tracking-[-0.045em]">
-            Your anime &amp; manga,<br />
-            <span className="text-foreground/35">beautifully</span>{" "}
-            <span className="bg-gradient-to-r from-pink to-violet bg-clip-text italic text-transparent">tracked.</span>
+            A story for<br />
+            <span className="text-foreground/35">every</span>{" "}
+            <span className="bg-gradient-to-r from-pink to-violet bg-clip-text italic text-transparent">mood.</span>
           </h1>
           <p className="mt-7 max-w-[520px] text-[17px] leading-relaxed text-muted-foreground">
-            Thousands of titles, one list that follows your taste. Pick a mood and Animood pulls the
-            shows that match it — not the ones an algorithm wants to sell you.
+            Some nights need a quiet escape. Others need a story that wrecks you.
+            Find anime and manga for the way you feel, shaped by the things you love.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/search" className="rounded-full bg-foreground px-7 py-3.5 text-[14px] font-extrabold text-background transition-colors hover:bg-pink">
-              Explore titles
+            <Link href="/recommendations" className="rounded-full bg-pink px-7 py-3.5 text-[14px] font-extrabold text-on-accent transition-colors hover:bg-foreground hover:text-background">
+              Find my next favorite ↗
             </Link>
             <Link href="/my-list" className="rounded-full border border-border-strong px-7 py-3.5 text-[14px] font-bold transition-colors hover:border-foreground">
               My list
@@ -65,24 +65,9 @@ function Hero({ anime }: { anime: Media[] }) {
 }
 
 export default async function HomePage() {
-  let anime: Media[] = [];
-  let manga: Media[] = [];
-  let failed = false;
-  try {
-    [anime, manga] = await Promise.all([getTrending("ANIME", 12), getTrending("MANGA", 12)]);
-  } catch {
-    failed = true;
-  }
-
-  if (failed) {
-    return (
-      <div className="mx-auto max-w-[1560px] px-6 py-24 text-center sm:px-10">
-        <p className="mono text-xs tracking-[0.14em] text-muted-2">
-          COULDN&apos;T LOAD TRENDING TITLES — TRY AGAIN LATER
-        </p>
-      </div>
-    );
-  }
+  const [animeResult, mangaResult] = await Promise.allSettled([getTrending("ANIME", 12), getTrending("MANGA", 12)]);
+  const anime = animeResult.status === "fulfilled" ? animeResult.value : [];
+  const manga = mangaResult.status === "fulfilled" ? mangaResult.value : [];
 
   const ticker = [
     ...anime.slice(0, 3).map((m) => `TRENDING · ${m.title.toUpperCase()}`),
@@ -92,11 +77,12 @@ export default async function HomePage() {
   return (
     <>
       <Hero anime={anime} />
-      <Ticker items={ticker} />
+      {ticker.length > 0 && <Ticker items={ticker} />}
       <MoodPicker />
 
       <section className="mx-auto max-w-[1560px] px-6 pb-16 sm:px-10">
         <SectionHead kicker="01 / TRENDING ANIME" title="Everyone's watching" accent="violet" action="SEARCH ALL →" href="/search?type=ANIME" />
+        {anime.length === 0 && <p className="py-6 text-sm text-muted-foreground">Trending anime is unavailable right now. You can still explore by mood.</p>}
         <div className="stagger grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6">
           {anime.slice(0, 12).map((m, i) => (
             <MediaCard key={m.id} media={{ id: m.id, title: m.title, coverImage: m.coverImage, format: m.format }} rank={i + 1} />
@@ -108,6 +94,7 @@ export default async function HomePage() {
 
       <section className="mx-auto max-w-[1560px] px-6 pb-20 sm:px-10">
         <SectionHead kicker="03 / TRENDING MANGA" title="On the page" accent="pink" action="SEARCH ALL →" href="/search?type=MANGA" />
+        {manga.length === 0 && <p className="py-6 text-sm text-muted-foreground">Trending manga is unavailable right now. You can still explore by mood.</p>}
         <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
           {manga.slice(0, 9).map((m) => (
             <CompactCard key={m.id} media={m} />

@@ -28,3 +28,23 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<your anon public key>
 - Site URL: your production URL (e.g. `https://animood-app.vercel.app`).
 - Additional redirect URLs: `http://localhost:3000/auth/callback` and
   `https://animood-app.vercel.app/auth/callback`.
+
+## Local storage and sync behavior
+
+- Guest lists use `animood.list.v1`; signed-in lists use a separate
+  `animood.list.v1.user:<user-id>` key for each account. Signing out shows the
+  guest list and retains the account's unsent changes for its next sign-in.
+- Existing shared-slot lists are migrated using their legacy owner marker.
+  An unowned guest list is claimed by the next account that signs in.
+- Each account record includes the last acknowledged cloud snapshot and IDs
+  of attempted writes. Pending edits and removals survive reloads, sign-out,
+  and lost network responses. Do not clear browser storage to troubleshoot
+  sync errors unless pending changes have been backed up.
+- Failed syncs retry with backoff (2 seconds up to 30 seconds), on browser
+  reconnection, or via **Retry** in the account indicator. “Synced · Cloud”
+  means the current local changes have been acknowledged, not live updates
+  from other devices. Remote changes are pulled at sign-in/page reload.
+- Account changes abort old requests and invalidate their callbacks. The
+  existing database ownership policies still enforce access to writes.
+
+These changes require no additional environment variables or database migration.

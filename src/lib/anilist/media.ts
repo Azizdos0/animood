@@ -1,126 +1,127 @@
-import { anilistRequest } from "./client";
-import {
-  MEDIA_BY_ID_QUERY, MEDIA_BY_IDS_QUERY, MEDIA_BY_MAL_IDS_QUERY,
-  RECOMMENDATIONS_QUERY, SEARCH_QUERY, TRENDING_QUERY,
-} from "./queries";
-import type {
-  Media, MediaFormat, MediaRecommendation, MediaStub, MediaType,
-} from "./types";
+// Cache-first, Jikan-backed catalog layer. Public signatures are unchanged
+// from the old AniList implementation so every consumer keeps compiling.
+import { jikanRequest, JikanError } from "./jikan";
+import type { JikanAnime, JikanRecommendationItem } from "./map";
+import { mapAnime, mapRecommendationEntry } from "./map";
+import { readCache, writeCache } from "./cache";
+import { genreId } from "./genres";
+import { supabaseServer } from "@/lib/supabase/server";
+import type { Media, MediaFormat, MediaRecommendation, MediaType } from "./types";
 
-interface RawTitle { romaji: string | null; english: string | null; native?: string | null }
-interface RawStub {
-  id: number; title: RawTitle; coverImage: { large: string | null } | null;
-  format: MediaFormat | null;
+// --- Jikan response envelopes ---------------------------------------------
+interface JikanSingle {
+  data: JikanAnime;
 }
-export interface RawMedia extends RawStub {
-  type: MediaType;
-  bannerImage: string | null;
-  description: string | null;
-  genres: string[];
-  tags: { id: number; name: string; rank: number }[];
-  episodes: number | null;
-  chapters: number | null;
-  averageScore: number | null;
-  popularity: number;
-  seasonYear: number | null;
-  relations: { edges: { relationType: string; node: RawStub }[] };
+interface JikanList {
+  data: JikanAnime[];
+  pagination?: { has_next_page?: boolean };
+}
+interface JikanRecList {
+  data: JikanRecommendationItem[];
 }
 
-const pickTitle = (t: RawTitle): string => t.english ?? t.romaji ?? t.native ?? "Untitled";
-const mapStub = (s: RawStub): MediaStub => ({
-  id: s.id, title: pickTitle(s.title),
-  coverImage: s.coverImage?.large ?? null, format: s.format,
-});
-
-export function mapMedia(raw: RawMedia): Media {
-  return {
-    id: raw.id,
-    type: raw.type,
-    title: pickTitle(raw.title),
-    coverImage: raw.coverImage?.large ?? null,
-    bannerImage: raw.bannerImage,
-    description: raw.description,
-    genres: raw.genres ?? [],
-    tags: (raw.tags ?? []).map((t) => ({ id: t.id, name: t.name, rank: t.rank })),
-    format: raw.format,
-    episodes: raw.episodes,
-    chapters: raw.chapters,
-    averageScore: raw.averageScore,
-    popularity: raw.popularity ?? 0,
-    seasonYear: raw.seasonYear,
-    relations: (raw.relations?.edges ?? []).map((e) => ({
-      relationType: e.relationType, node: mapStub(e.node),
-    })),
-  };
+// Reads use the anon server client. Any cache failure (misconfig, network,
+// RLS) falls back to live Jikan rather than surfacing an error.
+async function readCacheSafe(ids: number[]): Promise<Media[]> {
+  try {
+    const supabase = await supabaseServer();
+    return await readCache(supabase, ids);
+  } catch {
+    return [];
+  }
 }
 
-export async function searchMedia(params: {
-  search?: string; type: MediaType; genre?: string; format?: MediaFormat;
-  seasonYear?: number; sort?: string; page?: number; perPage?: number;
-}): Promise<{ items: Media[]; hasNextPage: boolean }> {
-  const data = await anilistRequest<{
-    Page: { pageInfo: { hasNextPage: boolean }; media: RawMedia[] };
-  }>(SEARCH_QUERY, {
-    search: params.search || undefined,
-    type: params.type,
-    genre: params.genre || undefined,
-    format: params.format || undefined,
-    seasonYear: params.seasonYear || undefined,
-    sort: params.sort ? [params.sort] : ["POPULARITY_DESC"],
-    page: params.page ?? 1,
-    perPage: params.perPage ?? 24,
-  });
-  return {
-    items: data.Page.media.map(mapMedia),
-    hasNextPage: data.Page.pageInfo.hasNextPage,
-  };
-}
+const fetchFull = (id: number) => jikanRequest<JikanSingle>(`/anime/${id}/full`);
 
 export async function getMediaById(id: number): Promise<Media | null> {
-  const data = await anilistRequest<{ Media: RawMedia | null }>(MEDIA_BY_ID_QUERY, { id });
-  return data.Media ? mapMedia(data.Media) : null;
-}
-
-export async function getTrending(type: MediaType, perPage = 20): Promise<Media[]> {
-  const data = await anilistRequest<{ Page: { media: RawMedia[] } }>(
-    TRENDING_QUERY, { type, perPage }
-  );
-  return data.Page.media.map(mapMedia);
-}
-
-export async function getRecommendationsFor(
-  mediaId: number, perPage = 25
-): Promise<MediaRecommendation[]> {
-  const data = await anilistRequest<{
-    Media: { recommendations: { nodes: {
-      rating: number; mediaRecommendation: RawStub | null;
-    }[] } } | null;
-  }>(RECOMMENDATIONS_QUERY, { mediaId, perPage });
-
-  const nodes = data.Media?.recommendations.nodes ?? [];
-  return nodes
-    .filter((n) => n.mediaRecommendation !== null)
-    .map((n) => ({
-      mediaId: n.mediaRecommendation!.id,
-      rating: n.rating,
-      media: mapStub(n.mediaRecommendation!),
-    }));
+  const [hit] = await readCacheSafe([id]);
+  if (hit) return hit;
+  try {
+    const media = mapAnime((await fetchFull(id)).data);
+    await writeCache([media]);
+    return media;
+  } catch (err) {
+    if (err instanceof JikanError) return null;
+    throw err;
+  }
 }
 
 export async function getMediaByIds(ids: number[]): Promise<Media[]> {
   if (ids.length === 0) return [];
-  const chunks: number[][] = [];
-  for (let i = 0; i < ids.length; i += 50) chunks.push(ids.slice(i, i + 50));
 
-  const results = await Promise.all(
-    chunks.map((chunk) =>
-      anilistRequest<{ Page: { media: RawMedia[] } }>(MEDIA_BY_IDS_QUERY, {
-        ids: chunk,
-        perPage: 50,
-      })
+  const hits = await readCacheSafe(ids);
+  const hitIds = new Set(hits.map((m) => m.id));
+  const misses = ids.filter((id) => !hitIds.has(id));
+
+  // Partial-tolerant: a miss whose fetch throws is skipped, not fatal.
+  const settled = await Promise.all(
+    misses.map((id) =>
+      fetchFull(id)
+        .then((body) => mapAnime(body.data))
+        .catch(() => null)
     )
   );
-  return results.flatMap((r) => r.Page.media.map(mapMedia));
+  const fetched = settled.filter((m): m is Media => m !== null);
+
+  await writeCache(fetched);
+  return [...hits, ...fetched];
+}
+
+const SORT_MAP: Record<string, { order_by: string; sort: string }> = {
+  POPULARITY_DESC: { order_by: "members", sort: "desc" },
+  SCORE_DESC: { order_by: "score", sort: "desc" },
+};
+const DEFAULT_SORT = { order_by: "members", sort: "desc" };
+
+export async function searchMedia(params: {
+  search?: string;
+  type: MediaType;
+  genre?: string;
+  format?: MediaFormat;
+  seasonYear?: number;
+  sort?: string;
+  page?: number;
+  perPage?: number;
+}): Promise<{ items: Media[]; hasNextPage: boolean }> {
+  // Jikan is anime-only in this catalog; MANGA yields nothing.
+  if (params.type === "MANGA") return { items: [], hasNextPage: false };
+
+  const qs = new URLSearchParams();
+  if (params.search) qs.set("q", params.search);
+  const gid = genreId(params.genre);
+  if (gid !== undefined) qs.set("genres", String(gid));
+  const { order_by, sort } = SORT_MAP[params.sort ?? ""] ?? DEFAULT_SORT;
+  qs.set("order_by", order_by);
+  qs.set("sort", sort);
+  qs.set("page", String(params.page ?? 1));
+  qs.set("limit", String(params.perPage ?? 24));
+
+  const body = await jikanRequest<JikanList>(`/anime?${qs.toString()}`);
+  const items = (body.data ?? []).map(mapAnime);
+  await writeCache(items); // best-effort warm
+  return { items, hasNextPage: body.pagination?.has_next_page ?? false };
+}
+
+export async function getTrending(type: MediaType, perPage = 20): Promise<Media[]> {
+  if (type === "MANGA") return [];
+  const body = await jikanRequest<JikanList>(
+    `/top/anime?filter=bypopularity&limit=${perPage}`
+  );
+  const items = (body.data ?? []).map(mapAnime);
+  await writeCache(items); // best-effort warm
+  return items;
+}
+
+export async function getRecommendationsFor(
+  mediaId: number,
+  perPage = 25
+): Promise<MediaRecommendation[]> {
+  try {
+    const body = await jikanRequest<JikanRecList>(`/anime/${mediaId}/recommendations`);
+    return (body.data ?? []).slice(0, perPage).map(mapRecommendationEntry);
+  } catch {
+    return [];
+  }
 }
 
 export interface MalMediaStub {
@@ -135,25 +136,15 @@ export async function getMediaByMalIds(
   malIds: number[],
   type: MediaType
 ): Promise<MalMediaStub[]> {
+  if (type === "MANGA") return [];
   if (malIds.length === 0) return [];
-  const chunks: number[][] = [];
-  for (let i = 0; i < malIds.length; i += 50) chunks.push(malIds.slice(i, i + 50));
-
-  const results = await Promise.all(
-    chunks.map((chunk) =>
-      anilistRequest<{ Page: { media: (RawStub & { idMal: number | null })[] } }>(
-        MEDIA_BY_MAL_IDS_QUERY,
-        { ids: chunk, type, perPage: 50 }
-      )
-    )
-  );
-  return results.flatMap((r) =>
-    r.Page.media.map((m) => ({
-      id: m.id,
-      idMal: m.idMal,
-      title: pickTitle(m.title),
-      coverImage: m.coverImage?.large ?? null,
-      format: m.format,
-    }))
-  );
+  // MAL ids are already canonical, so id === idMal.
+  const media = await getMediaByIds(malIds);
+  return media.map((m) => ({
+    id: m.id,
+    idMal: m.id,
+    title: m.title,
+    coverImage: m.coverImage,
+    format: m.format,
+  }));
 }

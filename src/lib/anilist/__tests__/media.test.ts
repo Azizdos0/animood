@@ -1,69 +1,226 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { mapMedia, searchMedia, getMediaById } from "@/lib/anilist/media";
+import { COWBOY_BEBOP_FULL, REC_ITEM } from "./fixtures/jikan";
 
-const rawMedia = {
-  id: 1, type: "ANIME",
-  title: { romaji: "Steins;Gate", english: "Steins;Gate", native: null },
-  coverImage: { large: "cover.jpg" },
-  bannerImage: "banner.jpg",
-  description: "A story.",
-  genres: ["Sci-Fi", "Thriller"],
-  tags: [{ id: 10, name: "Time Travel", rank: 95 }],
-  format: "TV", episodes: 24, chapters: null,
-  averageScore: 91, popularity: 500000, seasonYear: 2011,
-  relations: { edges: [
-    { relationType: "SEQUEL",
-      node: { id: 2, title: { romaji: "S;G 0", english: null },
-              coverImage: { large: "c2.jpg" }, format: "TV" } },
-  ] },
-};
+// --- Mocks -----------------------------------------------------------------
+// Keep the real JikanError so `instanceof` checks in media.ts hold.
+vi.mock("@/lib/anilist/jikan", async (importActual) => {
+  const actual = await importActual<typeof import("@/lib/anilist/jikan")>();
+  return { ...actual, jikanRequest: vi.fn() };
+});
+vi.mock("@/lib/anilist/cache", () => ({
+  readCache: vi.fn(),
+  writeCache: vi.fn().mockResolvedValue(undefined),
+}));
+vi.mock("@/lib/supabase/server", () => ({
+  supabaseServer: vi.fn().mockResolvedValue({}),
+}));
 
-describe("mapMedia", () => {
-  it("maps raw AniList media into the domain shape", () => {
-    const m = mapMedia(rawMedia as never);
-    expect(m.id).toBe(1);
-    expect(m.title).toBe("Steins;Gate");
-    expect(m.coverImage).toBe("cover.jpg");
-    expect(m.tags[0]).toEqual({ id: 10, name: "Time Travel", rank: 95 });
-    expect(m.relations[0].relationType).toBe("SEQUEL");
-    expect(m.relations[0].node.id).toBe(2);
+import { jikanRequest, JikanError } from "@/lib/anilist/jikan";
+import { readCache, writeCache } from "@/lib/anilist/cache";
+import {
+  getMediaById,
+  getMediaByIds,
+  searchMedia,
+  getTrending,
+  getRecommendationsFor,
+  getMediaByMalIds,
+} from "@/lib/anilist/media";
+import type { Media } from "@/lib/anilist/types";
+
+const jikanMock = vi.mocked(jikanRequest);
+const readCacheMock = vi.mocked(readCache);
+const writeCacheMock = vi.mocked(writeCache);
+
+function cached(id: number): Media {
+  return {
+    id,
+    type: "ANIME",
+    title: `Cached ${id}`,
+    coverImage: null,
+    bannerImage: null,
+    description: null,
+    genres: [],
+    tags: [],
+    format: null,
+    episodes: null,
+    chapters: null,
+    averageScore: null,
+    popularity: 0,
+    seasonYear: null,
+    relations: [],
+  };
+}
+
+const anime = (id: number) => ({ ...COWBOY_BEBOP_FULL, mal_id: id, title: `Anime ${id}`, title_english: null });
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  readCacheMock.mockResolvedValue([]);
+  writeCacheMock.mockResolvedValue(undefined);
+});
+
+describe("getMediaById", () => {
+  it("returns a cache hit without calling Jikan", async () => {
+    readCacheMock.mockResolvedValue([cached(1)]);
+    const m = await getMediaById(1);
+    expect(m?.id).toBe(1);
+    expect(jikanMock).not.toHaveBeenCalled();
   });
 
-  it("prefers english title, falls back to romaji", () => {
-    const noEnglish = { ...rawMedia, title: { romaji: "R", english: null, native: null } };
-    expect(mapMedia(noEnglish as never).title).toBe("R");
+  it("fetches, maps and writes cache on a miss", async () => {
+    readCacheMock.mockResolvedValue([]);
+    jikanMock.mockResolvedValue({ data: anime(42) });
+    const m = await getMediaById(42);
+    expect(jikanMock).toHaveBeenCalledWith("/anime/42/full");
+    expect(m?.id).toBe(42);
+    expect(m?.title).toBe("Anime 42");
+    expect(writeCacheMock).toHaveBeenCalledWith([expect.objectContaining({ id: 42 })]);
+  });
+
+  it("returns null on JikanError", async () => {
+    readCacheMock.mockResolvedValue([]);
+    jikanMock.mockRejectedValue(new JikanError("not found", 404));
+    expect(await getMediaById(999)).toBeNull();
+  });
+
+  it("falls back to live Jikan when the cache read throws", async () => {
+    readCacheMock.mockRejectedValue(new Error("cache down"));
+    jikanMock.mockResolvedValue({ data: anime(7) });
+    const m = await getMediaById(7);
+    expect(m?.id).toBe(7);
+    expect(jikanMock).toHaveBeenCalledWith("/anime/7/full");
+  });
+});
+
+describe("getMediaByIds", () => {
+  it("returns [] for empty input without touching cache or Jikan", async () => {
+    const res = await getMediaByIds([]);
+    expect(res).toEqual([]);
+    expect(readCacheMock).not.toHaveBeenCalled();
+    expect(jikanMock).not.toHaveBeenCalled();
+  });
+
+  it("returns cache hits WITHOUT calling Jikan when everything is cached", async () => {
+    readCacheMock.mockResolvedValue([cached(1), cached(2)]);
+    const res = await getMediaByIds([1, 2]);
+    expect(res.map((m) => m.id).sort()).toEqual([1, 2]);
+    expect(jikanMock).not.toHaveBeenCalled();
+  });
+
+  it("fetches + writes cache for misses, merged with hits", async () => {
+    readCacheMock.mockResolvedValue([cached(1)]);
+    jikanMock.mockResolvedValue({ data: anime(2) });
+    const res = await getMediaByIds([1, 2]);
+    expect(jikanMock).toHaveBeenCalledWith("/anime/2/full");
+    expect(jikanMock).toHaveBeenCalledTimes(1);
+    expect(res.map((m) => m.id).sort()).toEqual([1, 2]);
+    expect(writeCacheMock).toHaveBeenCalledWith([expect.objectContaining({ id: 2 })]);
+  });
+
+  it("tolerates a throwing miss and returns the rest", async () => {
+    readCacheMock.mockResolvedValue([]);
+    jikanMock.mockImplementation((path: string) => {
+      if (path === "/anime/2/full") return Promise.reject(new JikanError("boom", 500));
+      return Promise.resolve({ data: anime(1) }) as never;
+    });
+    const res = await getMediaByIds([1, 2]);
+    expect(res.map((m) => m.id)).toEqual([1]);
   });
 });
 
 describe("searchMedia", () => {
-  beforeEach(() => vi.restoreAllMocks());
+  it("returns empty for MANGA without calling Jikan", async () => {
+    const res = await searchMedia({ type: "MANGA" });
+    expect(res).toEqual({ items: [], hasNextPage: false });
+    expect(jikanMock).not.toHaveBeenCalled();
+  });
 
-  it("returns mapped items and pagination", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true, status: 200, headers: { get: () => null },
-      json: async () => ({ data: { Page: {
-        pageInfo: { hasNextPage: true }, media: [rawMedia],
-      } } }),
-    } as unknown as Response);
-    vi.stubGlobal("fetch", fetchMock);
-
-    const res = await searchMedia({ search: "gate", type: "ANIME" });
+  it("maps items and returns hasNextPage from pagination for ANIME", async () => {
+    jikanMock.mockResolvedValue({ data: [anime(1)], pagination: { has_next_page: true } });
+    const res = await searchMedia({ type: "ANIME", search: "gate" });
     expect(res.items).toHaveLength(1);
-    expect(res.items[0].title).toBe("Steins;Gate");
+    expect(res.items[0].id).toBe(1);
     expect(res.hasNextPage).toBe(true);
+    expect(writeCacheMock).toHaveBeenCalled();
+    const path = jikanMock.mock.calls[0][0] as string;
+    expect(path).toContain("q=gate");
+  });
+
+  it("translates a known genre name to its Jikan id", async () => {
+    jikanMock.mockResolvedValue({ data: [], pagination: { has_next_page: false } });
+    await searchMedia({ type: "ANIME", genre: "Action" });
+    const path = jikanMock.mock.calls[0][0] as string;
+    expect(path).toContain("genres=1");
+  });
+
+  it("maps SCORE_DESC sort to order_by=score&sort=desc", async () => {
+    jikanMock.mockResolvedValue({ data: [], pagination: { has_next_page: false } });
+    await searchMedia({ type: "ANIME", sort: "SCORE_DESC" });
+    const path = jikanMock.mock.calls[0][0] as string;
+    expect(path).toContain("order_by=score");
+    expect(path).toContain("sort=desc");
   });
 });
 
-describe("getMediaById", () => {
-  beforeEach(() => vi.restoreAllMocks());
+describe("getTrending", () => {
+  it("returns [] for MANGA", async () => {
+    expect(await getTrending("MANGA")).toEqual([]);
+    expect(jikanMock).not.toHaveBeenCalled();
+  });
 
-  it("returns null when AniList has no Media", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true, status: 200, headers: { get: () => null },
-      json: async () => ({ data: { Media: null } }),
-    } as unknown as Response);
-    vi.stubGlobal("fetch", fetchMock);
+  it("fetches top anime by popularity and maps", async () => {
+    jikanMock.mockResolvedValue({ data: [anime(1), anime(2)] });
+    const res = await getTrending("ANIME", 5);
+    expect(jikanMock).toHaveBeenCalledWith("/top/anime?filter=bypopularity&limit=5");
+    expect(res.map((m) => m.id)).toEqual([1, 2]);
+    expect(writeCacheMock).toHaveBeenCalled();
+  });
+});
 
-    expect(await getMediaById(999)).toBeNull();
+describe("getRecommendationsFor", () => {
+  it("maps recommendation entries", async () => {
+    jikanMock.mockResolvedValue({ data: [REC_ITEM] });
+    const recs = await getRecommendationsFor(1);
+    expect(jikanMock).toHaveBeenCalledWith("/anime/1/recommendations");
+    expect(recs).toHaveLength(1);
+    expect(recs[0]).toEqual({
+      mediaId: 5,
+      rating: 42,
+      media: { id: 5, title: "CB Movie", coverImage: "r.jpg", format: null },
+    });
+  });
+
+  it("slices to perPage", async () => {
+    jikanMock.mockResolvedValue({ data: [REC_ITEM, REC_ITEM, REC_ITEM] });
+    const recs = await getRecommendationsFor(1, 2);
+    expect(recs).toHaveLength(2);
+  });
+
+  it("returns [] on failure", async () => {
+    jikanMock.mockRejectedValue(new JikanError("boom", 500));
+    expect(await getRecommendationsFor(1)).toEqual([]);
+  });
+});
+
+describe("getMediaByMalIds", () => {
+  it("returns [] for MANGA", async () => {
+    expect(await getMediaByMalIds([1, 2], "MANGA")).toEqual([]);
+    expect(jikanMock).not.toHaveBeenCalled();
+  });
+
+  it("returns [] for empty input", async () => {
+    expect(await getMediaByMalIds([], "ANIME")).toEqual([]);
+  });
+
+  it("maps to MalMediaStub using canonical MAL ids", async () => {
+    readCacheMock.mockResolvedValue([]);
+    jikanMock.mockImplementation((path: string) => {
+      const id = Number(path.split("/")[2]);
+      return Promise.resolve({ data: anime(id) }) as never;
+    });
+    const stubs = await getMediaByMalIds([21], "ANIME");
+    expect(stubs).toEqual([
+      { id: 21, idMal: 21, title: "Anime 21", coverImage: "lg.jpg", format: "TV" },
+    ]);
   });
 });

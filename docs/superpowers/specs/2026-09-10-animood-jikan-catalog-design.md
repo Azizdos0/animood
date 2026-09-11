@@ -83,12 +83,16 @@ truncate public.list_entries;
 
 `profiles` and `follows` are untouched.
 
-## 4. The catalog module — `src/lib/catalog/*`
+## 4. The catalog module — in place under `src/lib/anilist/*`
 
-Replaces `src/lib/anilist/*`. Preserves `Media`/`MediaStub`/`MediaType`/`MediaFormat` and
-the public function names/signatures. `src/lib/anilist/types.ts` is kept (or re-exported) so
-the `Media` import path is stable; the fetch functions move to the catalog module and old
-`anilist/*` fetch files are removed/redirected.
+**Implementation note (deviation from a `catalog/` rename):** to keep all ~57 consumer
+imports untouched and low-risk, we keep the existing `@/lib/anilist/*` import paths. `types.ts`
+(Media contract, 37 imports) and `relations.ts` (source-agnostic, 3 imports) are unchanged.
+`media.ts` (17 imports) keeps its public function names/signatures but its internals are
+rewritten to be Jikan+cache-backed; new siblings `jikan.ts` (client), `map.ts` (pure mappers),
+`cache.ts` are added under `src/lib/anilist/`; the AniList-only `client.ts` + `queries.ts` are
+removed. The directory name becomes a misnomer (now holds Jikan code) — a cosmetic rename to
+`catalog/` is a deferred follow-up. Function/type descriptions below apply to these files.
 
 ### `client.ts` — `jikanRequest<T>(path, opts)`
 GET `https://api.jikan.moe/v4{path}`, `Accept: application/json`, Next `revalidate` cache,

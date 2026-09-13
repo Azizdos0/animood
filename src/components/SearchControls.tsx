@@ -10,22 +10,22 @@ export interface SearchControlsState {
   format: string;
 }
 
-const FORMATS = ["", "TV", "MOVIE", "OVA", "ONA", "SPECIAL", "MANGA", "NOVEL"];
+const FORMATS = ["", "TV", "MOVIE", "OVA", "ONA", "SPECIAL"];
 
 const fieldClass =
   "rounded-xl border border-border bg-surface px-3 py-2.5 text-sm text-foreground transition-colors focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40";
 
+// Catalog is anime-only (Jikan-backed); manga type selection is paused.
 export function SearchControls({ initial }: { initial: SearchControlsState }) {
   const router = useRouter();
   const [q, setQ] = useState(initial.q);
-  const [type, setType] = useState<MediaType>(initial.type);
   const [format, setFormat] = useState(initial.format);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     const params = new URLSearchParams();
     if (q) params.set("q", q);
-    params.set("type", type);
+    params.set("type", "ANIME");
     if (format) params.set("format", format);
     router.push(`/search?${params.toString()}`);
   }
@@ -42,15 +42,6 @@ export function SearchControls({ initial }: { initial: SearchControlsState }) {
         placeholder="Search titles…"
         className={`min-w-48 flex-1 ${fieldClass}`}
       />
-      <select
-        aria-label="Type"
-        value={type}
-        onChange={(e) => setType(e.target.value as MediaType)}
-        className={fieldClass}
-      >
-        <option value="ANIME">Anime</option>
-        <option value="MANGA">Manga</option>
-      </select>
       <select
         aria-label="Format"
         value={format}

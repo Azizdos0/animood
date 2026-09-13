@@ -7,7 +7,6 @@ import { Ticker } from "@/components/home/Ticker";
 import { MoodPicker } from "@/components/home/MoodPicker";
 import { HeroStats } from "@/components/home/HeroStats";
 import { InProgress } from "@/components/home/InProgress";
-import { CompactCard } from "@/components/home/CompactCard";
 
 function Hero({ anime }: { anime: Media[] }) {
   const key = anime[0];
@@ -65,14 +64,11 @@ function Hero({ anime }: { anime: Media[] }) {
 }
 
 export default async function HomePage() {
-  const [animeResult, mangaResult] = await Promise.allSettled([getTrending("ANIME", 12), getTrending("MANGA", 12)]);
+  // Catalog is anime-only; trending manga is a dead entry point and is not fetched.
+  const [animeResult] = await Promise.allSettled([getTrending("ANIME", 12)]);
   const anime = animeResult.status === "fulfilled" ? animeResult.value : [];
-  const manga = mangaResult.status === "fulfilled" ? mangaResult.value : [];
 
-  const ticker = [
-    ...anime.slice(0, 3).map((m) => `TRENDING · ${m.title.toUpperCase()}`),
-    ...manga.slice(0, 3).map((m) => `ON THE PAGE · ${m.title.toUpperCase()}`),
-  ];
+  const ticker = anime.slice(0, 3).map((m) => `TRENDING · ${m.title.toUpperCase()}`);
 
   return (
     <>
@@ -91,16 +87,6 @@ export default async function HomePage() {
       </section>
 
       <InProgress />
-
-      <section className="mx-auto max-w-[1560px] px-6 pb-20 sm:px-10">
-        <SectionHead kicker="03 / TRENDING MANGA" title="On the page" accent="pink" action="SEARCH ALL →" href="/search?type=MANGA" />
-        {manga.length === 0 && <p className="py-6 text-sm text-muted-foreground">Trending manga is unavailable right now. You can still explore by mood.</p>}
-        <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
-          {manga.slice(0, 9).map((m) => (
-            <CompactCard key={m.id} media={m} />
-          ))}
-        </div>
-      </section>
     </>
   );
 }

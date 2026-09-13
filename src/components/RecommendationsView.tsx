@@ -66,10 +66,6 @@ export function RecommendationsView({ moodId = null, mediaType = "ANIME" }: { mo
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <p className="mono text-[11px] tracking-[0.14em] text-muted-foreground">YOUR TASTE. TODAY&apos;S MOOD. SOMETHING NEW.</p>
-        <nav aria-label="Discovery type" className="flex rounded-full border border-border-strong p-1">
-          {(["ANIME", "MANGA"] as const).map((type) => <Link key={type} href={discoveryHref(moodId, type)} aria-current={mediaType === type ? "page" : undefined}
-            className={`rounded-full px-5 py-2 text-xs font-extrabold ${mediaType === type ? "bg-foreground text-background" : "text-muted-foreground hover:text-pink"}`}>{type === "ANIME" ? "Anime" : "Manga"}</Link>)}
-        </nav>
       </div>
       <MoodChoices selected={moodId} type={mediaType} />
       <div className="flex flex-wrap items-center justify-between gap-3">

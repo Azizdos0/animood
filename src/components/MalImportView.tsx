@@ -98,7 +98,7 @@ export function MalImportView() {
         <p className="font-medium text-foreground">How to export from MyAnimeList</p>
         <ol className="mt-2 list-decimal space-y-1 pl-5">
           <li>On MyAnimeList, go to <span className="text-foreground">Profile → Settings → Export</span>.</li>
-          <li>Export your Anime list and/or Manga list (you&apos;ll get <code className="rounded bg-background px-1">.xml.gz</code> files).</li>
+          <li>Export your Anime list (you&apos;ll get an <code className="rounded bg-background px-1">.xml.gz</code> file). Manga lists aren&apos;t supported yet.</li>
           <li>Upload the file(s) below — we&apos;ll match them to our database.</li>
         </ol>
       </div>

@@ -58,28 +58,24 @@ function toInt(value: string | null): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+// Catalog is anime-only: manga rows in a MAL export are dropped, never imported.
 export function parseMalExport(xml: string): ParsedMalExport {
   if (!/<myanimelist[\s>]/i.test(xml)) {
     throw new Error("Not a MyAnimeList export file.");
   }
 
-  const isManga = /<manga>[\s\S]*?<\/manga>/i.test(xml);
-  const type: MediaType = isManga ? "MANGA" : "ANIME";
-  const blockTag = isManga ? "manga" : "anime";
-  const idTag = isManga ? "manga_mangadb_id" : "series_animedb_id";
-  const progressTag = isManga ? "my_read_chapters" : "my_watched_episodes";
-
-  const blocks = xml.match(new RegExp(`<${blockTag}>[\\s\\S]*?</${blockTag}>`, "gi")) ?? [];
+  const type: MediaType = "ANIME";
+  const blocks = xml.match(/<anime>[\s\S]*?<\/anime>/gi) ?? [];
   const entries: MalEntry[] = [];
 
   for (const block of blocks) {
-    const malId = toInt(field(block, idTag));
+    const malId = toInt(field(block, "series_animedb_id"));
     if (malId <= 0) continue;
     entries.push({
       malId,
       status: field(block, "my_status") ?? "",
       score: toInt(field(block, "my_score")),
-      progress: toInt(field(block, progressTag)),
+      progress: toInt(field(block, "my_watched_episodes")),
     });
   }
 

@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import { updateDiscoveryPreferences, type FavoriteSeed } from "@/lib/recommend/preferences";
 import type { MediaType } from "@/lib/anilist/types";
 
+// Catalog is anime-only; favorite search no longer offers a manga type toggle.
 export function TasteStarter({ initial, type, onClose }: { initial: FavoriteSeed[]; type: MediaType; onClose: () => void }) {
   const [selected, setSelected] = useState(initial);
   const [query, setQuery] = useState("");
-  const [searchType, setSearchType] = useState(type);
+  const searchType = type;
   const key = `${searchType}:${query.trim()}`;
   const [result, setResult] = useState<{ key: string; items: FavoriteSeed[]; error?: boolean } | null>(null);
   const [retry, setRetry] = useState(0);
@@ -29,14 +30,13 @@ export function TasteStarter({ initial, type, onClose }: { initial: FavoriteSeed
     <section aria-label="Pick your favorites" className="rounded-2xl border border-pink/50 bg-surface p-5 sm:p-7">
       <div className="flex items-start justify-between gap-4">
         <div><h2 className="text-2xl font-black tracking-tight">Three favorites. A little more you.</h2>
-          <p className="mt-2 text-sm text-muted-foreground">Pick anime or manga you love. These guide your picks without changing your list or ratings.</p></div>
+          <p className="mt-2 text-sm text-muted-foreground">Pick anime you love. These guide your picks without changing your list or ratings.</p></div>
         <button type="button" onClick={onClose} aria-label="Close favorite picker" className="rounded-full border border-border-strong px-3 py-2">✕</button>
       </div>
       <div className="mt-5 flex flex-wrap gap-3">
         <label className="min-w-0 flex-1"><span className="sr-only">Search favorites</span>
           <input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search a title you love…" maxLength={150}
             className="w-full rounded-xl border border-border-strong bg-background px-4 py-3 text-sm outline-none focus:border-pink" /></label>
-        <label><span className="sr-only">Favorite type</span><select value={searchType} onChange={(e) => setSearchType(e.target.value as MediaType)} className="rounded-xl border border-border-strong bg-background px-4 py-3 text-sm"><option value="ANIME">Anime</option><option value="MANGA">Manga</option></select></label>
       </div>
       <div aria-live="polite" className="mt-4 flex min-h-9 flex-wrap items-center gap-2">
         <span className="mono text-xs text-pink">{selected.length}/3 selected</span>

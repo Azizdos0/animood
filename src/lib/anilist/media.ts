@@ -70,8 +70,21 @@ export async function getMediaByIds(ids: number[]): Promise<Media[]> {
 const SORT_MAP: Record<string, { order_by: string; sort: string }> = {
   POPULARITY_DESC: { order_by: "members", sort: "desc" },
   SCORE_DESC: { order_by: "score", sort: "desc" },
+  // Jikan has no exact "trending" sort — approximate with the popularity default.
+  TRENDING_DESC: { order_by: "members", sort: "desc" },
 };
 const DEFAULT_SORT = { order_by: "members", sort: "desc" };
+
+// Our MediaFormat → Jikan `/anime?type=`. Manga formats have no anime type.
+const FORMAT_TYPE: Partial<Record<MediaFormat, string>> = {
+  TV: "tv",
+  TV_SHORT: "tv",
+  MOVIE: "movie",
+  OVA: "ova",
+  ONA: "ona",
+  SPECIAL: "special",
+  MUSIC: "music",
+};
 
 export async function searchMedia(params: {
   search?: string;
@@ -90,6 +103,8 @@ export async function searchMedia(params: {
   if (params.search) qs.set("q", params.search);
   const gid = genreId(params.genre);
   if (gid !== undefined) qs.set("genres", String(gid));
+  const jikanType = params.format ? FORMAT_TYPE[params.format] : undefined;
+  if (jikanType) qs.set("type", jikanType);
   const { order_by, sort } = SORT_MAP[params.sort ?? ""] ?? DEFAULT_SORT;
   qs.set("order_by", order_by);
   qs.set("sort", sort);

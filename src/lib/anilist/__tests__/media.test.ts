@@ -153,6 +153,27 @@ describe("searchMedia", () => {
     expect(path).toContain("genres=1");
   });
 
+  it("forwards a mapped format to Jikan type=", async () => {
+    jikanMock.mockResolvedValue({ data: [], pagination: { has_next_page: false } });
+    await searchMedia({ type: "ANIME", format: "MOVIE" });
+    const path = jikanMock.mock.calls[0][0] as string;
+    expect(path).toContain("type=movie");
+  });
+
+  it("omits type= when no format is given", async () => {
+    jikanMock.mockResolvedValue({ data: [], pagination: { has_next_page: false } });
+    await searchMedia({ type: "ANIME" });
+    const path = jikanMock.mock.calls[0][0] as string;
+    expect(path).not.toContain("type=");
+  });
+
+  it("omits type= for a format with no anime mapping (MANGA)", async () => {
+    jikanMock.mockResolvedValue({ data: [], pagination: { has_next_page: false } });
+    await searchMedia({ type: "ANIME", format: "MANGA" });
+    const path = jikanMock.mock.calls[0][0] as string;
+    expect(path).not.toContain("type=");
+  });
+
   it("maps SCORE_DESC sort to order_by=score&sort=desc", async () => {
     jikanMock.mockResolvedValue({ data: [], pagination: { has_next_page: false } });
     await searchMedia({ type: "ANIME", sort: "SCORE_DESC" });

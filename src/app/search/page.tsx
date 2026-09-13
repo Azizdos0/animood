@@ -13,7 +13,8 @@ export default async function SearchPage({
   searchParams: Promise<{ q?: string; type?: string; format?: string; genre?: string }>;
 }) {
   const sp = await searchParams;
-  const type: MediaType = sp.type === "MANGA" ? "MANGA" : "ANIME";
+  // Catalog is anime-only; the search type is not user-selectable.
+  const type: MediaType = "ANIME";
   const q = sp.q ?? "";
   const format = sp.format ?? "";
   const genre = sp.genre ?? "";

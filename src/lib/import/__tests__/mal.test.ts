@@ -51,6 +51,29 @@ const MANGA_XML = `<?xml version="1.0" encoding="UTF-8" ?>
   </manga>
 </myanimelist>`;
 
+const MIXED_XML = `<?xml version="1.0" encoding="UTF-8" ?>
+<myanimelist>
+  <myinfo>
+    <user_id>1</user_id>
+    <user_name>tester</user_name>
+  </myinfo>
+  <anime>
+    <series_animedb_id>21</series_animedb_id>
+    <series_title><![CDATA[One Piece]]></series_title>
+    <series_type>TV</series_type>
+    <my_watched_episodes>1050</my_watched_episodes>
+    <my_score>9</my_score>
+    <my_status>Watching</my_status>
+  </anime>
+  <manga>
+    <manga_mangadb_id>13</manga_mangadb_id>
+    <manga_title><![CDATA[One Piece]]></manga_title>
+    <my_read_chapters>1090</my_read_chapters>
+    <my_score>10</my_score>
+    <my_status>Plan to Read</my_status>
+  </manga>
+</myanimelist>`;
+
 describe("parseMalExport", () => {
   it("parses an anime export into entries with the ANIME type", () => {
     const { type, entries } = parseMalExport(ANIME_XML);
@@ -60,11 +83,15 @@ describe("parseMalExport", () => {
     expect(entries[1]).toEqual({ malId: 5114, status: "Completed", score: 0, progress: 64 });
   });
 
-  it("parses a manga export into entries with the MANGA type", () => {
-    const { type, entries } = parseMalExport(MANGA_XML);
-    expect(type).toBe("MANGA");
+  it("drops manga rows from a manga-only export (catalog is anime-only)", () => {
+    expect(() => parseMalExport(MANGA_XML)).toThrow("No list entries found in the export file.");
+  });
+
+  it("drops manga rows from a mixed export, keeping only anime entries", () => {
+    const { type, entries } = parseMalExport(MIXED_XML);
+    expect(type).toBe("ANIME");
     expect(entries).toHaveLength(1);
-    expect(entries[0]).toEqual({ malId: 13, status: "Plan to Read", score: 10, progress: 1090 });
+    expect(entries[0]).toEqual({ malId: 21, status: "Watching", score: 9, progress: 1050 });
   });
 
   it("throws on non-MAL XML", () => {

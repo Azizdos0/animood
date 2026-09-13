@@ -3,6 +3,8 @@ import { getMediaByMalIds } from "@/lib/anilist/media";
 import { parseMalExport, toImportEntries, type ImportEntry } from "@/lib/import/mal";
 
 export const runtime = "nodejs";
+// Headroom for cold-cache backfill fetches during large MAL imports.
+export const maxDuration = 60;
 
 const MAX_ENTRIES = 20000;
 

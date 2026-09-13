@@ -33,6 +33,12 @@ async function readCacheSafe(ids: number[]): Promise<Media[]> {
 
 const fetchFull = (id: number) => jikanRequest<JikanSingle>(`/anime/${id}/full`);
 
+// Cold-cache backfill cap: each miss is a throttled (~350ms) `/full` fetch, so
+// a large cold list (e.g. a multi-thousand-id MAL import) would fan out
+// unboundedly and time out. Backfill at most this many misses per call; the
+// rest resolve on later loads or when viewed individually (cache warms over time).
+const MAX_BACKFILL = 24;
+
 export async function getMediaById(id: number): Promise<Media | null> {
   const [hit] = await readCacheSafe([id]);
   if (hit) return hit;
@@ -51,7 +57,8 @@ export async function getMediaByIds(ids: number[]): Promise<Media[]> {
 
   const hits = await readCacheSafe(ids);
   const hitIds = new Set(hits.map((m) => m.id));
-  const misses = ids.filter((id) => !hitIds.has(id));
+  // Bound the fan-out: only the first MAX_BACKFILL misses are fetched now.
+  const misses = ids.filter((id) => !hitIds.has(id)).slice(0, MAX_BACKFILL);
 
   // Partial-tolerant: a miss whose fetch throws is skipped, not fatal.
   const settled = await Promise.all(
@@ -113,7 +120,9 @@ export async function searchMedia(params: {
 
   const body = await jikanRequest<JikanList>(`/anime?${qs.toString()}`);
   const items = (body.data ?? []).map(mapAnime);
-  await writeCache(items); // best-effort warm
+  // NB: do NOT warm the cache here. Jikan's /anime (list) endpoint omits
+  // `relations`; a last-writer-wins upsert would overwrite complete /full rows
+  // with relation-less ones, breaking the detail page's Related section.
   return { items, hasNextPage: body.pagination?.has_next_page ?? false };
 }
 
@@ -123,7 +132,7 @@ export async function getTrending(type: MediaType, perPage = 20): Promise<Media[
     `/top/anime?filter=bypopularity&limit=${perPage}`
   );
   const items = (body.data ?? []).map(mapAnime);
-  await writeCache(items); // best-effort warm
+  // NB: no writeCache — /top/anime omits `relations` (see searchMedia note).
   return items;
 }
 

@@ -126,6 +126,18 @@ describe("getMediaByIds", () => {
     const res = await getMediaByIds([1, 2]);
     expect(res.map((m) => m.id)).toEqual([1]);
   });
+
+  it("caps cold-cache backfill fan-out at MAX_BACKFILL (24)", async () => {
+    readCacheMock.mockResolvedValue([]);
+    jikanMock.mockImplementation((path: string) => {
+      const id = Number(path.split("/")[2]);
+      return Promise.resolve({ data: anime(id) }) as never;
+    });
+    const ids = Array.from({ length: 100 }, (_, i) => i + 1);
+    const res = await getMediaByIds(ids);
+    expect(jikanMock).toHaveBeenCalledTimes(24);
+    expect(res).toHaveLength(24);
+  });
 });
 
 describe("searchMedia", () => {
@@ -141,7 +153,8 @@ describe("searchMedia", () => {
     expect(res.items).toHaveLength(1);
     expect(res.items[0].id).toBe(1);
     expect(res.hasNextPage).toBe(true);
-    expect(writeCacheMock).toHaveBeenCalled();
+    // List endpoints omit `relations`; must NOT warm the cache.
+    expect(writeCacheMock).not.toHaveBeenCalled();
     const path = jikanMock.mock.calls[0][0] as string;
     expect(path).toContain("q=gate");
   });
@@ -194,7 +207,8 @@ describe("getTrending", () => {
     const res = await getTrending("ANIME", 5);
     expect(jikanMock).toHaveBeenCalledWith("/top/anime?filter=bypopularity&limit=5");
     expect(res.map((m) => m.id)).toEqual([1, 2]);
-    expect(writeCacheMock).toHaveBeenCalled();
+    // List endpoints omit `relations`; must NOT warm the cache.
+    expect(writeCacheMock).not.toHaveBeenCalled();
   });
 });
 

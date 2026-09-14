@@ -10,8 +10,7 @@ export default async function RecommendationsPage({ searchParams }: { searchPara
         What do you want{" "}
         <span className="italic text-foreground/40">to feel?</span>
       </PageHead>
-      {/* Catalog is anime-only; the discovery type is not user-selectable. */}
-      <RecommendationsView moodId={getMood(params.mood)?.id ?? null} mediaType="ANIME" />
+      <RecommendationsView moodId={getMood(params.mood)?.id ?? null} mediaType={params.type === "MANGA" ? "MANGA" : "ANIME"} />
     </div>
   );
 }

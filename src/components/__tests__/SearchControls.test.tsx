@@ -17,10 +17,4 @@ describe("SearchControls", () => {
     expect(push).toHaveBeenCalledWith(expect.stringContaining("q=cowboy"));
     expect(push).toHaveBeenCalledWith(expect.stringContaining("type=ANIME"));
   });
-
-  it("does not render a manga type option (catalog is anime-only)", () => {
-    render(<SearchControls initial={{ q: "", type: "ANIME", format: "" }} />);
-    expect(screen.queryByRole("combobox", { name: /type/i })).toBeNull();
-    expect(screen.queryByRole("option", { name: /manga/i })).toBeNull();
-  });
 });

@@ -3,6 +3,8 @@ import { MyListView } from "@/components/MyListView";
 import { PageHead } from "@/components/editorial";
 import { UploadIcon } from "@/components/icons";
 
+export const metadata = { title: "My List" };
+
 export default function MyListPage() {
   return (
     <div className="mx-auto max-w-[1560px] space-y-8 px-6 py-12 sm:px-10">

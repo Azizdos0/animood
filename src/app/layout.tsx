@@ -17,9 +17,31 @@ const jetbrains = JetBrains_Mono({
   weight: ["400", "500"],
 });
 
+const SITE_URL = "https://animood-app.vercel.app";
+const SITE_DESCRIPTION =
+  "Track the anime and manga you love and discover your next favorite, shaped by your taste and your mood. No account required.";
+
 export const metadata: Metadata = {
-  title: "Animood",
-  description: "A modern anime & manga tracker. Track. Discover. Obsess.",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "Animood — a story for every mood",
+    template: "%s · Animood",
+  },
+  description: SITE_DESCRIPTION,
+  applicationName: "Animood",
+  icons: { icon: "/icon.svg" },
+  openGraph: {
+    type: "website",
+    siteName: "Animood",
+    url: SITE_URL,
+    title: "Animood — a story for every mood",
+    description: SITE_DESCRIPTION,
+  },
+  twitter: {
+    card: "summary",
+    title: "Animood — a story for every mood",
+    description: SITE_DESCRIPTION,
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

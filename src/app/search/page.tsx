@@ -7,6 +7,8 @@ import { PageHead } from "@/components/editorial";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = { title: "Search" };
+
 export default async function SearchPage({
   searchParams,
 }: {
@@ -36,7 +38,7 @@ export default async function SearchPage({
 
   return (
     <div className="mx-auto max-w-[1560px] space-y-8 px-6 py-12 sm:px-10">
-      <PageHead kicker={`SEARCH · ${genre ? genre.toUpperCase() : "12,480 TITLES INDEXED"}`} accent="violet">
+      <PageHead kicker={`SEARCH · ${genre ? genre.toUpperCase() : "EVERY ANIME & MANGA"}`} accent="violet">
         {genre ? genre : "Browse everything"}
       </PageHead>
       <SearchControls initial={{ q, type, format }} />

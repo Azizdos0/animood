@@ -2,6 +2,8 @@ import { loadFeed } from "@/lib/feed/server";
 import { FeedView } from "@/components/feed/FeedView";
 import { PageHead } from "@/components/editorial";
 
+export const metadata = { title: "Feed" };
+
 export default async function FeedPage() {
   const res = await loadFeed().catch(() => ({ state: "signed_out" as const }));
 

@@ -10,7 +10,7 @@ export function AuthButton() {
     return (
       <div className="mono flex items-center gap-2 rounded-full border border-border-strong px-3.5 py-2 text-[11px] text-muted-foreground">
         <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-violet" />
-        <span>SYNCED · LOCAL</span>
+        <span>SAVED ON THIS DEVICE</span>
       </div>
     );
   }

@@ -2,6 +2,8 @@ import { RecommendationsView } from "@/components/RecommendationsView";
 import { PageHead } from "@/components/editorial";
 import { getMood } from "@/lib/recommend/moods";
 
+export const metadata = { title: "For You" };
+
 export default async function RecommendationsPage({ searchParams }: { searchParams: Promise<{ mood?: string; type?: string }> }) {
   const params = await searchParams;
   return (

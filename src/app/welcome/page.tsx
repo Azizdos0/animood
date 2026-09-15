@@ -2,6 +2,8 @@ import { Suspense } from "react";
 import { WelcomeForm } from "@/components/WelcomeForm";
 import { PageHead } from "@/components/editorial";
 
+export const metadata = { title: "Choose your username" };
+
 export default function WelcomePage() {
   return (
     <div className="mx-auto max-w-[1560px] space-y-8 px-6 py-12 sm:px-10">

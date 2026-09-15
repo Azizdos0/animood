@@ -43,7 +43,7 @@ export function InProgress() {
             Pick up where you dropped off
           </h2>
           <p className="max-w-sm text-[15px] leading-relaxed text-muted-foreground">
-            Episode counts stay in this browser. No account, no sync nag, no ads — just your list.
+            No account needed. No ads. Your list stays on your device.
           </p>
           <div className="mt-8 flex gap-7">
             <Stat n={watching} label="WATCHING" />

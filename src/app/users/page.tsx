@@ -1,6 +1,8 @@
 import { PageHead } from "@/components/editorial";
 import { UserSearch } from "@/components/discover/UserSearch";
 
+export const metadata = { title: "People" };
+
 export default function UsersPage() {
   return (
     <div className="mx-auto max-w-[1560px] px-6 py-12 sm:px-10">

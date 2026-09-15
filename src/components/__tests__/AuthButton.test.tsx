@@ -47,7 +47,7 @@ describe("AuthButton", () => {
   it("falls back to the local chip when unconfigured", () => {
     mockState = { ...mockState, user: null, configured: false };
     render(<AuthButton />);
-    expect(screen.getByText(/synced · local/i)).toBeInTheDocument();
+    expect(screen.getByText(/saved on this device/i)).toBeInTheDocument();
   });
 
   it("renders the avatar image when avatarUrl is present", () => {

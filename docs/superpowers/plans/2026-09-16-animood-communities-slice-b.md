@@ -305,7 +305,7 @@ begin
   select community_id into v_comm from public.discussion_threads where id = p_thread_id;
   if v_comm is null then raise exception 'not_community_thread'; end if;
   v_role := public.community_role_of(v_comm, v_uid);
-  if v_role not in ('owner','moderator') then raise exception 'forbidden'; end if;
+  if v_role is null or v_role not in ('owner','moderator') then raise exception 'forbidden'; end if;
   update public.discussion_threads set is_pinned = p_pinned where id = p_thread_id;
 end; $$;
 
@@ -318,7 +318,7 @@ begin
     where p.id = p_post_id;
   if v_comm is null then raise exception 'not_community_post'; end if;
   v_role := public.community_role_of(v_comm, v_uid);
-  if v_role not in ('owner','moderator') then raise exception 'forbidden'; end if;
+  if v_role is null or v_role not in ('owner','moderator') then raise exception 'forbidden'; end if;
   update public.discussion_posts set is_deleted = true, body = '' where id = p_post_id;
 end; $$;
 
@@ -329,7 +329,7 @@ begin
   select community_id into v_comm from public.discussion_threads where id = p_thread_id;
   if v_comm is null then raise exception 'not_community_thread'; end if;
   v_role := public.community_role_of(v_comm, v_uid);
-  if v_role not in ('owner','moderator') then raise exception 'forbidden'; end if;
+  if v_role is null or v_role not in ('owner','moderator') then raise exception 'forbidden'; end if;
   delete from public.discussion_threads where id = p_thread_id;
 end; $$;
 
@@ -339,7 +339,7 @@ returns void language plpgsql security definer set search_path = public as $$
 declare v_uid uuid := auth.uid(); v_role text; v_target_role text;
 begin
   v_role := public.community_role_of(p_community_id, v_uid);
-  if v_role not in ('owner','moderator') then raise exception 'forbidden'; end if;
+  if v_role is null or v_role not in ('owner','moderator') then raise exception 'forbidden'; end if;
   v_target_role := public.community_role_of(p_community_id, p_target);
   if v_target_role = 'owner' then raise exception 'cannot_ban_owner'; end if;
   if v_target_role = 'moderator' and v_role <> 'owner' then raise exception 'forbidden'; end if;
@@ -354,14 +354,23 @@ returns void language plpgsql security definer set search_path = public as $$
 declare v_uid uuid := auth.uid(); v_role text;
 begin
   v_role := public.community_role_of(p_community_id, v_uid);
-  if v_role not in ('owner','moderator') then raise exception 'forbidden'; end if;
+  if v_role is null or v_role not in ('owner','moderator') then raise exception 'forbidden'; end if;
   delete from public.community_bans where community_id = p_community_id and user_id = p_target;
 end; $$;
 
+-- Reads: revoke default PUBLIC execute, then grant to anon + authenticated.
 revoke all on function public.get_community_threads(uuid,integer) from public;
 revoke all on function public.get_community_members(uuid) from public;
 grant execute on function public.get_community_threads(uuid,integer) to anon, authenticated;
 grant execute on function public.get_community_members(uuid) to anon, authenticated;
+-- Writes: revoke default PUBLIC/anon execute (0008 lesson), then grant to authenticated only.
+revoke all on function public.create_community_thread(uuid,text,text) from public, anon, authenticated;
+revoke all on function public.create_community_post(uuid,uuid,text) from public, anon, authenticated;
+revoke all on function public.set_thread_pinned(uuid,boolean) from public, anon, authenticated;
+revoke all on function public.moderate_remove_post(uuid) from public, anon, authenticated;
+revoke all on function public.moderate_delete_thread(uuid) from public, anon, authenticated;
+revoke all on function public.ban_member(uuid,uuid) from public, anon, authenticated;
+revoke all on function public.unban_member(uuid,uuid) from public, anon, authenticated;
 grant execute on function public.create_community_thread(uuid,text,text) to authenticated;
 grant execute on function public.create_community_post(uuid,uuid,text) to authenticated;
 grant execute on function public.set_thread_pinned(uuid,boolean) to authenticated;

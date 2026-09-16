@@ -1,9 +1,33 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { pageMetadata } from "@/lib/seo";
 import { loadProfilePage, type ProfilePageState } from "@/lib/profile/server";
+import { supabaseServer } from "@/lib/supabase/server";
+import { getProfileCard } from "@/lib/profile/queries";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileOwnerBar } from "@/components/profile/ProfileOwnerBar";
 import { ProfileContent } from "@/components/profile/ProfileContent";
 import { FollowButton } from "@/components/profile/FollowButton";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ username: string }>;
+}): Promise<Metadata> {
+  const { username } = await params;
+  try {
+    const supabase = await supabaseServer();
+    const profile = await getProfileCard(supabase as never, username);
+    if (!profile) return {};
+    const name = profile.displayName?.trim() || profile.username;
+    return pageMetadata({
+      title: name,
+      description: `${name}'s anime & manga list on Animood.`,
+    });
+  } catch {
+    return {};
+  }
+}
 
 export default async function ProfilePage({
   params,

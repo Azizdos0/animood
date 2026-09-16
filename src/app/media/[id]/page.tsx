@@ -1,4 +1,6 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { pageMetadata } from "@/lib/seo";
 import { getMediaById } from "@/lib/anilist/media";
 import { relatedByType } from "@/lib/anilist/relations";
 import { ListEditor } from "@/components/ListEditor";
@@ -6,6 +8,26 @@ import { MediaCard } from "@/components/MediaCard";
 import { SectionHead } from "@/components/editorial";
 import { CommentSection } from "@/components/comments/CommentSection";
 import { DiscussionBoard } from "@/components/discussions/DiscussionBoard";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const mediaId = Number((await params).id);
+  if (!Number.isInteger(mediaId)) return {};
+  try {
+    const media = await getMediaById(mediaId);
+    if (!media) return {};
+    const plain = (media.description ?? "").replace(/<[^>]+>/g, "").trim();
+    const description = plain
+      ? plain.slice(0, 155).trimEnd() + (plain.length > 155 ? "…" : "")
+      : `Track ${media.title} and find what to watch next on Animood.`;
+    return pageMetadata({ title: media.title, description });
+  } catch {
+    return {};
+  }
+}
 
 export default async function MediaDetailPage({
   params,

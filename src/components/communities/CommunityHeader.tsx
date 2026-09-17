@@ -17,6 +17,7 @@ export function CommunityHeader({
   const router = useRouter();
   const [signedIn, setSignedIn] = useState(false);
   const [pending, setPending] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isSupabaseConfigured()) return;
@@ -39,9 +40,14 @@ export function CommunityHeader({
   async function handleJoin() {
     if (!signedIn || pending) return;
     setPending(true);
+    setJoinError(null);
     try {
-      await joinCommunity(supabaseBrowser(), community.id);
-      router.refresh();
+      const result = await joinCommunity(supabaseBrowser(), community.id);
+      if (result.ok) {
+        router.refresh();
+      } else {
+        setJoinError(result.error === "banned" ? "You can't join this community." : "Something went wrong.");
+      }
     } finally {
       setPending(false);
     }
@@ -83,14 +89,17 @@ export function CommunityHeader({
           </Link>
         ) : null}
         {viewerRole === null ? (
-          <button
-            type="button"
-            onClick={handleJoin}
-            disabled={!signedIn || pending}
-            className="rounded-full bg-foreground px-4 py-2 text-[12px] font-extrabold text-background transition-colors hover:bg-pink disabled:opacity-40"
-          >
-            Join
-          </button>
+          <div className="flex flex-col items-end gap-1">
+            <button
+              type="button"
+              onClick={handleJoin}
+              disabled={!signedIn || pending}
+              className="rounded-full bg-foreground px-4 py-2 text-[12px] font-extrabold text-background transition-colors hover:bg-pink disabled:opacity-40"
+            >
+              Join
+            </button>
+            {joinError ? <span className="text-[12px] text-pink">{joinError}</span> : null}
+          </div>
         ) : viewerRole !== "owner" ? (
           <button
             type="button"

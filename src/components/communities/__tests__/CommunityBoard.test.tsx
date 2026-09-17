@@ -40,6 +40,12 @@ beforeEach(() => {
 });
 
 describe("CommunityBoard", () => {
+  it("renders initialThreads immediately without a loading skeleton flash", () => {
+    render(<CommunityBoard community={community} viewerRole="member" initialThreads={[thread]} />);
+    expect(screen.getByText("Best arc?")).toBeInTheDocument();
+    expect(document.querySelector(".skeleton")).toBeNull();
+  });
+
   it("does not render the composer and shows a join note when signed out (viewerRole null)", async () => {
     render(<CommunityBoard community={community} viewerRole={null} initialThreads={[thread]} />);
     await screen.findByText("Best arc?");

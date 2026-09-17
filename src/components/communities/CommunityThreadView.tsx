@@ -32,7 +32,7 @@ export function CommunityThreadView({ slug, thread, initialPosts, viewerRole }: 
         canReply={viewerRole !== null}
         createReply={viewerRole ? (tid, pid, body) => createCommunityPost(supabaseBrowser(), tid, pid, body) : undefined}
         canModerate={isMod}
-        onModerateRemove={async (postId) => { await moderateRemovePost(supabaseBrowser(), postId); }}
+        onModerateRemove={async (postId) => { await moderateRemovePost(supabaseBrowser(), postId); router.refresh(); }}
       />
     </div>
   );

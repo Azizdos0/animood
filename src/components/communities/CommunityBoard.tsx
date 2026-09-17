@@ -73,7 +73,7 @@ export function CommunityBoard({
   initialThreads: DiscussionThread[];
 }) {
   const router = useRouter();
-  const [status, setStatus] = useState<Status>("loading");
+  const [status, setStatus] = useState<Status>("ready");
   const [threads, setThreads] = useState<DiscussionThread[]>(initialThreads);
   const [signedIn, setSignedIn] = useState(false);
   const [title, setTitle] = useState("");

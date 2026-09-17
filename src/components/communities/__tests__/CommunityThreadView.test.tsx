@@ -70,6 +70,15 @@ describe("CommunityThreadView", () => {
     await waitFor(() => expect(moderateRemovePost).toHaveBeenCalledWith(expect.anything(), "p1"));
   });
 
+  it("refreshes the view after a moderator removes a post", async () => {
+    window.confirm = vi.fn(() => true);
+    render(<CommunityThreadView slug="isekai-fans" thread={thread} initialPosts={[post({ userId: "u2" })]} viewerRole="owner" />);
+    const removeBtn = await screen.findByRole("button", { name: /^remove$/i });
+    fireEvent.click(removeBtn);
+    await waitFor(() => expect(moderateRemovePost).toHaveBeenCalledWith(expect.anything(), "p1"));
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
+  });
+
   it("uses createCommunityPost (not the media createPost) for replies when the viewer is a member", async () => {
     render(<CommunityThreadView slug="isekai-fans" thread={thread} initialPosts={[]} viewerRole="member" />);
     const textarea = await screen.findByLabelText("Reply body");

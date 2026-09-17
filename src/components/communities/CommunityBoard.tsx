@@ -67,15 +67,16 @@ export function CommunityBoard({
   community,
   viewerRole,
   initialThreads,
+  signedIn,
 }: {
   community: Community;
   viewerRole: CommunityRole | null;
   initialThreads: DiscussionThread[];
+  signedIn: boolean;
 }) {
   const router = useRouter();
   const [status, setStatus] = useState<Status>("ready");
   const [threads, setThreads] = useState<DiscussionThread[]>(initialThreads);
-  const [signedIn, setSignedIn] = useState(false);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [pending, setPending] = useState(false);
@@ -93,13 +94,8 @@ export function CommunityBoard({
 
     async function load() {
       try {
-        const supabase = supabaseBrowser();
-        const [{ data }, list] = await Promise.all([
-          supabase.auth.getUser(),
-          listCommunityThreads(supabase, community.id),
-        ]);
+        const list = await listCommunityThreads(supabaseBrowser(), community.id);
         if (cancelled) return;
-        setSignedIn(!!data.user);
         setThreads(list);
         setStatus("ready");
       } catch {

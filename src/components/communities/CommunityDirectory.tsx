@@ -51,7 +51,7 @@ export function CommunityDirectory() {
     }
 
     let cancelled = false;
-    setStatus((prev) => (prev === "loading" ? prev : "loading"));
+    setStatus("loading");
 
     const timer = setTimeout(() => {
       listCommunities(supabaseBrowser(), query)

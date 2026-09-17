@@ -31,7 +31,7 @@ beforeEach(() => {
 describe("CommunityHeader", () => {
   it("shows an inline error and does not refresh when join fails as banned", async () => {
     joinCommunity.mockResolvedValueOnce({ ok: false, error: "banned" });
-    render(<CommunityHeader community={community} viewerRole={null} />);
+    render(<CommunityHeader community={community} viewerRole={null} signedIn={true} />);
     const button = await screen.findByRole("button", { name: /join/i });
     await waitFor(() => expect(button).not.toBeDisabled());
     button.click();
@@ -41,7 +41,7 @@ describe("CommunityHeader", () => {
   });
 
   it("refreshes and shows no error when join succeeds", async () => {
-    render(<CommunityHeader community={community} viewerRole={null} />);
+    render(<CommunityHeader community={community} viewerRole={null} signedIn={true} />);
     const button = await screen.findByRole("button", { name: /join/i });
     await waitFor(() => expect(button).not.toBeDisabled());
     button.click();

@@ -41,26 +41,26 @@ beforeEach(() => {
 
 describe("CommunityBoard", () => {
   it("renders initialThreads immediately without a loading skeleton flash", () => {
-    render(<CommunityBoard community={community} viewerRole="member" initialThreads={[thread]} />);
+    render(<CommunityBoard community={community} viewerRole="member" initialThreads={[thread]} signedIn={true} />);
     expect(screen.getByText("Best arc?")).toBeInTheDocument();
     expect(document.querySelector(".skeleton")).toBeNull();
   });
 
   it("does not render the composer and shows a join note when signed out (viewerRole null)", async () => {
-    render(<CommunityBoard community={community} viewerRole={null} initialThreads={[thread]} />);
+    render(<CommunityBoard community={community} viewerRole={null} initialThreads={[thread]} signedIn={false} />);
     await screen.findByText("Best arc?");
     expect(screen.queryByPlaceholderText(/title/i)).toBeNull();
     expect(screen.getByText(/sign in to join the conversation/i)).toBeInTheDocument();
   });
 
   it("renders the composer when viewerRole is member", async () => {
-    render(<CommunityBoard community={community} viewerRole="member" initialThreads={[thread]} />);
+    render(<CommunityBoard community={community} viewerRole="member" initialThreads={[thread]} signedIn={true} />);
     await waitFor(() => expect(screen.getByPlaceholderText(/title/i)).toBeInTheDocument());
   });
 
   it("shows a pin marker for pinned threads", async () => {
     listCommunityThreads.mockResolvedValue([pinnedThread]);
-    render(<CommunityBoard community={community} viewerRole="member" initialThreads={[pinnedThread]} />);
+    render(<CommunityBoard community={community} viewerRole="member" initialThreads={[pinnedThread]} signedIn={true} />);
     const row = await screen.findByText("Read this first");
     expect(row.closest("a")?.textContent).toMatch(/📌/);
   });
@@ -68,7 +68,7 @@ describe("CommunityBoard", () => {
   it("submits a new thread via createCommunityThread and routes to it", async () => {
     const { default: userEvent } = await import("@testing-library/user-event");
     const user = userEvent.setup();
-    render(<CommunityBoard community={community} viewerRole="member" initialThreads={[thread]} />);
+    render(<CommunityBoard community={community} viewerRole="member" initialThreads={[thread]} signedIn={true} />);
     const titleInput = await screen.findByPlaceholderText(/title/i);
     const bodyInput = screen.getByPlaceholderText(/discuss/i);
     await user.type(titleInput, "New thread");

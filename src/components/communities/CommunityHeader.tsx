@@ -1,41 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { isSupabaseConfigured, supabaseBrowser } from "@/lib/supabase/client";
+import { supabaseBrowser } from "@/lib/supabase/client";
 import { joinCommunity, leaveCommunity } from "@/lib/communities/queries";
 import type { Community, CommunityRole } from "@/lib/communities/types";
 
 export function CommunityHeader({
   community,
   viewerRole,
+  signedIn,
 }: {
   community: Community;
   viewerRole: CommunityRole | null;
+  signedIn: boolean;
 }) {
   const router = useRouter();
-  const [signedIn, setSignedIn] = useState(false);
   const [pending, setPending] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!isSupabaseConfigured()) return;
-    let cancelled = false;
-    supabaseBrowser()
-      .auth.getUser()
-      .then(({ data }) => {
-        if (cancelled) return;
-        setSignedIn(!!data.user);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setSignedIn(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   async function handleJoin() {
     if (!signedIn || pending) return;

@@ -9,7 +9,7 @@ import type { DiscussionPost, PostNode } from "@/lib/discussions/types";
 
 const MAX_DEPTH = 5;
 
-const ERROR_COPY: Record<"empty" | "too_long" | "unknown", string> = {
+const ERROR_COPY: Record<string, string> = {
   empty: "Reply can't be empty.",
   too_long: "Reply is too long (max 5000 characters).",
   unknown: "Something went wrong.",
@@ -123,7 +123,7 @@ function PostItem({
   viewerId: string | null;
   onReply: (parentPostId: string, body: string) => Promise<void>;
   onDelete: (postId: string) => Promise<void>;
-  doReply: (parentPostId: string, body: string) => Promise<{ ok: true } | { ok: false; error: "empty" | "too_long" | "unknown" | string }>;
+  doReply: (parentPostId: string, body: string) => Promise<{ ok: true } | { ok: false; error: string }>;
   canReply: boolean;
   canModerate: boolean;
   onModerateRemove?: (postId: string) => Promise<void>;
@@ -144,7 +144,7 @@ function PostItem({
         setReplyOpen(false);
         await onReply(node.id, body);
       } else {
-        setError(ERROR_COPY[result.error as "empty" | "too_long" | "unknown"] ?? ERROR_COPY.unknown);
+        setError(ERROR_COPY[result.error] ?? ERROR_COPY.unknown);
       }
     } finally {
       setPending(false);
@@ -257,7 +257,7 @@ export function ThreadView({
 }: {
   threadId: string;
   initialPosts: DiscussionPost[];
-  createReply?: (threadId: string, parentPostId: string | null, body: string) => Promise<{ ok: true } | { ok: false; error: "empty" | "too_long" | "unknown" | string }>;
+  createReply?: (threadId: string, parentPostId: string | null, body: string) => Promise<{ ok: true } | { ok: false; error: string }>;
   canReply?: boolean;
   canModerate?: boolean;
   onModerateRemove?: (postId: string) => Promise<void>;
@@ -322,7 +322,7 @@ export function ThreadView({
       if (result.ok) {
         await refetch();
       } else {
-        setTopError(ERROR_COPY[result.error as "empty" | "too_long" | "unknown"] ?? ERROR_COPY.unknown);
+        setTopError(ERROR_COPY[result.error] ?? ERROR_COPY.unknown);
       }
     } finally {
       if (!cancelledRef.current) setTopPending(false);

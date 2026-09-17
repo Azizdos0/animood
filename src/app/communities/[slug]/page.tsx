@@ -25,10 +25,11 @@ export default async function CommunityPage({ params }: { params: Promise<{ slug
   const { data } = await supabase.auth.getUser();
   const res = await loadCommunityPage(slug, data.user?.id ?? null);
   if (res.state === "not_found") notFound();
+  const signedIn = !!data.user;
   return (
     <div className="mx-auto max-w-[1560px] space-y-8 px-6 py-12 sm:px-10">
-      <CommunityHeader community={res.community} viewerRole={res.viewerRole} />
-      <CommunityBoard community={res.community} viewerRole={res.viewerRole} initialThreads={res.threads} />
+      <CommunityHeader community={res.community} viewerRole={res.viewerRole} signedIn={signedIn} />
+      <CommunityBoard community={res.community} viewerRole={res.viewerRole} initialThreads={res.threads} signedIn={signedIn} />
     </div>
   );
 }

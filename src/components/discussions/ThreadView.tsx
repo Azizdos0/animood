@@ -9,7 +9,7 @@ import type { DiscussionPost, PostNode } from "@/lib/discussions/types";
 
 const MAX_DEPTH = 5;
 
-const ERROR_COPY: Record<"empty" | "too_long" | "unknown", string> = {
+const ERROR_COPY: Record<string, string> = {
   empty: "Reply can't be empty.",
   too_long: "Reply is too long (max 5000 characters).",
   unknown: "Something went wrong.",
@@ -113,16 +113,25 @@ function PostItem({
   viewerId,
   onReply,
   onDelete,
+  doReply,
+  canReply,
+  canModerate,
+  onModerateRemove,
 }: {
   node: PostNode;
   depth: number;
   viewerId: string | null;
   onReply: (parentPostId: string, body: string) => Promise<void>;
   onDelete: (postId: string) => Promise<void>;
+  doReply: (parentPostId: string, body: string) => Promise<{ ok: true } | { ok: false; error: string }>;
+  canReply: boolean;
+  canModerate: boolean;
+  onModerateRemove?: (postId: string) => Promise<void>;
 }) {
   const [replyOpen, setReplyOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [moderating, setModerating] = useState(false);
   const name = node.displayName ?? node.username;
   const cappedDepth = Math.min(depth, MAX_DEPTH);
 
@@ -130,12 +139,12 @@ function PostItem({
     setPending(true);
     setError(null);
     try {
-      const result = await createPost(supabaseBrowser(), viewerId as string, node.threadId, node.id, body);
+      const result = await doReply(node.id, body);
       if (result.ok) {
         setReplyOpen(false);
         await onReply(node.id, body);
       } else {
-        setError(ERROR_COPY[result.error]);
+        setError(ERROR_COPY[result.error] ?? ERROR_COPY.unknown);
       }
     } finally {
       setPending(false);
@@ -145,6 +154,17 @@ function PostItem({
   async function handleDeleteClick() {
     if (!window.confirm("Delete this post?")) return;
     await onDelete(node.id);
+  }
+
+  async function handleModerateRemoveClick() {
+    if (!onModerateRemove) return;
+    if (!window.confirm("Remove this post?")) return;
+    setModerating(true);
+    try {
+      await onModerateRemove(node.id);
+    } finally {
+      setModerating(false);
+    }
   }
 
   return (
@@ -167,7 +187,7 @@ function PostItem({
             <p className="mt-1 whitespace-pre-wrap text-sm">{node.body}</p>
           )}
           <div className="mt-1 flex items-center gap-3">
-            {viewerId ? (
+            {viewerId && canReply ? (
               <button
                 type="button"
                 onClick={() => setReplyOpen((v) => !v)}
@@ -185,6 +205,16 @@ function PostItem({
                 Delete
               </button>
             ) : null}
+            {canModerate && viewerId && node.userId !== viewerId && !node.isDeleted ? (
+              <button
+                type="button"
+                onClick={handleModerateRemoveClick}
+                disabled={moderating}
+                className="text-[12px] font-semibold text-muted-foreground hover:text-pink disabled:opacity-40"
+              >
+                Remove
+              </button>
+            ) : null}
           </div>
           {replyOpen ? (
             <div className="mt-2">
@@ -200,13 +230,38 @@ function PostItem({
         </div>
       </div>
       {node.children.map((child) => (
-        <PostItem key={child.id} node={child} depth={depth + 1} viewerId={viewerId} onReply={onReply} onDelete={onDelete} />
+        <PostItem
+          key={child.id}
+          node={child}
+          depth={depth + 1}
+          viewerId={viewerId}
+          onReply={onReply}
+          onDelete={onDelete}
+          doReply={doReply}
+          canReply={canReply}
+          canModerate={canModerate}
+          onModerateRemove={onModerateRemove}
+        />
       ))}
     </div>
   );
 }
 
-export function ThreadView({ threadId, initialPosts }: { threadId: string; initialPosts: DiscussionPost[] }) {
+export function ThreadView({
+  threadId,
+  initialPosts,
+  createReply,
+  canReply = true,
+  canModerate = false,
+  onModerateRemove,
+}: {
+  threadId: string;
+  initialPosts: DiscussionPost[];
+  createReply?: (threadId: string, parentPostId: string | null, body: string) => Promise<{ ok: true } | { ok: false; error: string }>;
+  canReply?: boolean;
+  canModerate?: boolean;
+  onModerateRemove?: (postId: string) => Promise<void>;
+}) {
   const [posts, setPosts] = useState<DiscussionPost[]>(initialPosts);
   const [viewerId, setViewerId] = useState<string | null>(null);
   const [topPending, setTopPending] = useState(false);
@@ -254,16 +309,20 @@ export function ThreadView({ threadId, initialPosts }: { threadId: string; initi
     }
   }
 
+  const doReply = createReply
+    ? (parentPostId: string | null, body: string) => createReply(threadId, parentPostId, body)
+    : (parentPostId: string | null, body: string) => createPost(supabaseBrowser(), viewerId as string, threadId, parentPostId, body);
+
   async function handleTopSubmit(body: string) {
     if (!viewerId) return;
     setTopPending(true);
     setTopError(null);
     try {
-      const result = await createPost(supabaseBrowser(), viewerId, threadId, null, body);
+      const result = await doReply(null, body);
       if (result.ok) {
         await refetch();
       } else {
-        setTopError(ERROR_COPY[result.error]);
+        setTopError(ERROR_COPY[result.error] ?? ERROR_COPY.unknown);
       }
     } finally {
       if (!cancelledRef.current) setTopPending(false);
@@ -274,14 +333,25 @@ export function ThreadView({ threadId, initialPosts }: { threadId: string; initi
 
   return (
     <div>
-      {viewerId ? (
+      {viewerId && canReply ? (
         <div className="mb-4">
           <Composer onSubmit={handleTopSubmit} pending={topPending} error={topError} />
         </div>
       ) : null}
       <div className="divide-y divide-border">
         {tree.map((node) => (
-          <PostItem key={node.id} node={node} depth={0} viewerId={viewerId} onReply={handleReply} onDelete={handleDelete} />
+          <PostItem
+            key={node.id}
+            node={node}
+            depth={0}
+            viewerId={viewerId}
+            onReply={handleReply}
+            onDelete={handleDelete}
+            doReply={(pid, body) => doReply(pid, body)}
+            canReply={canReply}
+            canModerate={canModerate}
+            onModerateRemove={onModerateRemove}
+          />
         ))}
       </div>
     </div>

@@ -10,6 +10,7 @@ interface ThreadRow {
   id: string; media_id: number; user_id: string; title: string; body?: string;
   created_at: string; last_activity_at: string; reply_count: number;
   username: string; display_name: string | null; avatar_url: string | null;
+  community_id?: string | null; is_pinned?: boolean;
 }
 
 interface PostRow {
@@ -23,6 +24,7 @@ function mapThread(r: ThreadRow): DiscussionThread {
     id: r.id, mediaId: r.media_id, userId: r.user_id, title: r.title, body: r.body,
     createdAt: r.created_at, lastActivityAt: r.last_activity_at, replyCount: Number(r.reply_count),
     username: r.username, displayName: r.display_name, avatarUrl: r.avatar_url,
+    communityId: r.community_id ?? undefined, isPinned: r.is_pinned ?? undefined,
   };
 }
 

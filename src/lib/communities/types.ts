@@ -7,3 +7,7 @@ export interface CommunityMember {
   userId: string; role: CommunityRole;
   username: string; displayName: string | null; avatarUrl: string | null;
 }
+export interface BannedMember {
+  userId: string; bannedBy: string | null; createdAt: string;
+  username: string; displayName: string | null; avatarUrl: string | null;
+}

@@ -1,6 +1,6 @@
 import type { SupaLike } from "@/lib/sync/cloud";
 import type { DiscussionThread } from "@/lib/discussions/types";
-import type { Community, CommunityMember, CommunityRole } from "./types";
+import type { BannedMember, Community, CommunityMember, CommunityRole } from "./types";
 
 interface CommunityRow { id: string; slug: string; name: string; description: string; member_count: number; created_by: string; created_at: string }
 const COMMUNITY_COLS = "id, slug, name, description, member_count, created_by, created_at";
@@ -32,6 +32,14 @@ export async function getMembers(supabase: SupaLike, communityId: string): Promi
   return ((data ?? []) as { user_id: string; role: CommunityRole; username: string; display_name: string | null; avatar_url: string | null }[])
     .filter((r) => r.username)
     .map((r) => ({ userId: r.user_id, role: r.role, username: r.username, displayName: r.display_name, avatarUrl: r.avatar_url }));
+}
+
+export async function listBans(supabase: SupaLike, communityId: string): Promise<BannedMember[]> {
+  const { data, error } = await supabase.rpc("get_community_bans", { p_community_id: communityId });
+  if (error) throw error;
+  return ((data ?? []) as { user_id: string; banned_by: string | null; created_at: string; username: string; display_name: string | null; avatar_url: string | null }[])
+    .filter((r) => r.username)
+    .map((r) => ({ userId: r.user_id, bannedBy: r.banned_by, createdAt: r.created_at, username: r.username, displayName: r.display_name, avatarUrl: r.avatar_url }));
 }
 
 export async function getMyRole(supabase: SupaLike, communityId: string, userId: string): Promise<CommunityRole | null> {

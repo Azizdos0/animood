@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import {
-  listCommunities, getCommunityBySlug, getMembers, getMyRole, listCommunityThreads,
+  listCommunities, getCommunityBySlug, getMembers, getMyRole, listBans, listCommunityThreads,
   createCommunity, joinCommunity, leaveCommunity, deleteCommunity, setMemberRole,
   banMember, unbanMember, setThreadPinned, moderateRemovePost, moderateDeleteThread,
   createCommunityThread, createCommunityPost,
@@ -184,5 +184,28 @@ describe("createCommunityPost", () => {
     const supabase = { rpc } as never;
     expect(await createCommunityPost(supabase, "t1", null, "hi")).toEqual({ ok: true });
     expect(rpc).toHaveBeenCalledWith("create_community_post", { p_thread_id: "t1", p_parent_post_id: null, p_body: "hi" });
+  });
+});
+
+describe("listBans", () => {
+  it("calls get_community_bans and maps rows snake→camel, dropping rows without a username", async () => {
+    const rpc = vi.fn(async () => ({
+      data: [
+        { user_id: "u-ban", banned_by: "u-owner", created_at: "t", username: "banned1", display_name: "Ban One", avatar_url: null },
+        { user_id: "u-x", banned_by: null, created_at: "t", username: null, display_name: null, avatar_url: null },
+      ],
+      error: null,
+    }));
+    const supabase = { rpc } as never;
+    const bans = await listBans(supabase, "c1");
+    expect(rpc).toHaveBeenCalledWith("get_community_bans", { p_community_id: "c1" });
+    expect(bans).toEqual([
+      { userId: "u-ban", bannedBy: "u-owner", createdAt: "t", username: "banned1", displayName: "Ban One", avatarUrl: null },
+    ]);
+  });
+
+  it("throws on rpc error", async () => {
+    const supabase = { rpc: async () => ({ data: null, error: { message: "boom" } }) } as never;
+    await expect(listBans(supabase, "c1")).rejects.toBeTruthy();
   });
 });

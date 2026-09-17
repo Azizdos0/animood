@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
-import { setMemberRole, banMember, deleteCommunity } from "@/lib/communities/queries";
-import type { Community, CommunityMember, CommunityRole } from "@/lib/communities/types";
+import { setMemberRole, banMember, unbanMember, deleteCommunity } from "@/lib/communities/queries";
+import type { BannedMember, Community, CommunityMember, CommunityRole } from "@/lib/communities/types";
 
 const ERROR_COPY: Record<string, string> = {
   forbidden: "You're not allowed to do that.",
@@ -34,13 +34,16 @@ export function CommunityManagePanel({
   community,
   viewerRole,
   initialMembers,
+  initialBans = [],
 }: {
   community: Community;
   viewerRole: CommunityRole | null;
   initialMembers: CommunityMember[];
+  initialBans?: BannedMember[];
 }) {
   const router = useRouter();
   const [members, setMembers] = useState(initialMembers);
+  const [bans, setBans] = useState(initialBans);
   const [pending, setPending] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -74,7 +77,31 @@ export function CommunityManagePanel({
         setError(errorMessage(res.error));
         return;
       }
+      const banned = members.find((m) => m.userId === userId);
       setMembers((prev) => prev.filter((m) => m.userId !== userId));
+      if (banned) {
+        setBans((prev) => [
+          { userId: banned.userId, username: banned.username, displayName: banned.displayName, avatarUrl: banned.avatarUrl, bannedBy: null, createdAt: new Date().toISOString() },
+          ...prev,
+        ]);
+      }
+      router.refresh();
+    } finally {
+      setPending(null);
+    }
+  }
+
+  async function handleUnban(userId: string) {
+    if (pending) return;
+    setPending(userId);
+    setError(null);
+    try {
+      const res = await unbanMember(supabaseBrowser(), community.id, userId);
+      if (!res.ok) {
+        setError(errorMessage(res.error));
+        return;
+      }
+      setBans((prev) => prev.filter((b) => b.userId !== userId));
       router.refresh();
     } finally {
       setPending(null);
@@ -167,6 +194,36 @@ export function CommunityManagePanel({
           );
         })}
       </div>
+
+      {bans.length > 0 ? (
+        <div className="space-y-2 border-t border-border pt-6">
+          <div className="mono text-[11px] tracking-[0.1em] text-muted-2">BANNED ({bans.length})</div>
+          {bans.map((b) => {
+            const name = b.displayName || b.username;
+            const busy = pending === b.userId;
+            return (
+              <div
+                key={b.userId}
+                data-testid="banned-row"
+                className="flex items-center justify-between gap-3 rounded-2xl border border-border px-4 py-3"
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <Avatar avatarUrl={b.avatarUrl} name={name} />
+                  <p className="truncate text-sm font-bold">@{b.username}</p>
+                </div>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => handleUnban(b.userId)}
+                  className="mono rounded-full border border-border-strong px-3 py-1.5 text-[11px] disabled:opacity-40"
+                >
+                  Unban
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
 
       {isOwner ? (
         <div className="border-t border-border pt-6">

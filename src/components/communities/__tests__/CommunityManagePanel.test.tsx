@@ -19,7 +19,7 @@ const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push, refresh }) }));
 
 import { CommunityManagePanel } from "@/components/communities/CommunityManagePanel";
-import type { Community, CommunityMember } from "@/lib/communities/types";
+import type { BannedMember, Community, CommunityMember } from "@/lib/communities/types";
 
 const community: Community = {
   id: "c1", slug: "isekai-fans", name: "Isekai Fans", description: "desc",
@@ -108,5 +108,22 @@ describe("CommunityManagePanel", () => {
     render(<CommunityManagePanel community={community} viewerRole="owner" initialMembers={members} />);
     fireEvent.click(screen.getByRole("button", { name: /demote/i }));
     expect(await screen.findByText(/not allowed|forbidden/i)).toBeInTheDocument();
+  });
+
+  it("renders a Banned section and Unban calls unbanMember", async () => {
+    const bans: BannedMember[] = [
+      { userId: "u-ban", username: "banned1", displayName: null, avatarUrl: null, bannedBy: "u-owner", createdAt: "2026-02-02T00:00:00Z" },
+    ];
+    render(<CommunityManagePanel community={community} viewerRole="owner" initialMembers={members} initialBans={bans} />);
+    const bannedRow = screen.getByText("@banned1").closest("[data-testid='banned-row']") as HTMLElement;
+    expect(bannedRow).toBeTruthy();
+    fireEvent.click(within(bannedRow).getByRole("button", { name: /unban/i }));
+    await waitFor(() => expect(unbanMember).toHaveBeenCalledWith(expect.anything(), "c1", "u-ban"));
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
+  });
+
+  it("shows no Banned section when there are no bans", () => {
+    render(<CommunityManagePanel community={community} viewerRole="owner" initialMembers={members} initialBans={[]} />);
+    expect(screen.queryByTestId("banned-row")).toBeNull();
   });
 });

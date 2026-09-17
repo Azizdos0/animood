@@ -188,7 +188,13 @@ export function CommunityBoard({
         </p>
       ) : null}
 
-      {status === "loading" ? (
+      {threads.length > 0 ? (
+        <div className="space-y-3">
+          {threads.map((thread) => (
+            <ThreadRow key={thread.id} slug={community.slug} thread={thread} />
+          ))}
+        </div>
+      ) : status === "loading" ? (
         <div className="space-y-3">
           <div className="skeleton h-16 w-full rounded-2xl" />
           <div className="skeleton h-16 w-full rounded-2xl" />
@@ -197,16 +203,10 @@ export function CommunityBoard({
         <p className="rounded-2xl border border-dashed border-border py-12 text-center text-sm text-muted-foreground">
           Couldn&apos;t load threads right now. Please try again later.
         </p>
-      ) : threads.length === 0 ? (
+      ) : (
         <p className="rounded-2xl border border-dashed border-border py-12 text-center text-sm text-muted-foreground">
           No threads yet — start one.
         </p>
-      ) : (
-        <div className="space-y-3">
-          {threads.map((thread) => (
-            <ThreadRow key={thread.id} slug={community.slug} thread={thread} />
-          ))}
-        </div>
       )}
     </div>
   );

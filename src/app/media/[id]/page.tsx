@@ -23,7 +23,7 @@ export async function generateMetadata({
     const description = plain
       ? plain.slice(0, 155).trimEnd() + (plain.length > 155 ? "…" : "")
       : `Track ${media.title} and find what to watch next on Animood.`;
-    return pageMetadata({ title: media.title, description });
+    return pageMetadata({ title: media.title, description, image: `/media/${mediaId}/opengraph-image` });
   } catch {
     return {};
   }

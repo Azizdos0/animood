@@ -8,18 +8,24 @@ import type { Metadata } from "next";
 // while showing the page's own title/description.
 const OG_IMAGE = "/opengraph-image";
 
+// `image` lets a route point at its own share image (e.g. a per-media
+// opengraph-image route). Explicit metadata images win over the file
+// convention in this Next version, so this is the deterministic way to give a
+// page a bespoke card while keeping the large-image twitter card.
 export function pageMetadata({
   title,
   description,
+  image = OG_IMAGE,
 }: {
   title: string;
   description: string;
+  image?: string;
 }): Metadata {
   const shareTitle = `${title} · Animood`;
   return {
     title, // flows through the layout's `%s · Animood` <title> template
     description,
-    openGraph: { title: shareTitle, description, images: [OG_IMAGE] },
-    twitter: { card: "summary_large_image", title: shareTitle, description, images: [OG_IMAGE] },
+    openGraph: { title: shareTitle, description, images: [image] },
+    twitter: { card: "summary_large_image", title: shareTitle, description, images: [image] },
   };
 }

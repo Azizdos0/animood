@@ -73,6 +73,16 @@ export const MEDIA_BY_IDS_QUERY = `
   }
 `;
 
+// Same as MEDIA_BY_IDS_QUERY minus adult titles. A nullable $isAdult variable
+// can't be shared: AniList returns no media at all when it is passed as null.
+export const MEDIA_BY_IDS_NON_ADULT_QUERY = `
+  query MediaByIdsNonAdult($ids: [Int], $perPage: Int) {
+    Page(page: 1, perPage: $perPage) {
+      media(id_in: $ids, isAdult: false) { ${MEDIA_FIELDS} }
+    }
+  }
+`;
+
 export const MEDIA_BY_MAL_IDS_QUERY = `
   query MediaByMalIds($ids: [Int], $type: MediaType, $perPage: Int) {
     Page(page: 1, perPage: $perPage) {

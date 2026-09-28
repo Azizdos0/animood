@@ -80,7 +80,8 @@ export async function POST(request: Request): Promise<Response> {
       if (result.status === "fulfilled") for (const item of result.value) candidates.set(item.id, item);
     }
     if (ids.size) {
-      try { for (const item of await getMediaByIds([...ids].slice(0, 80))) candidates.set(item.id, item); }
+      // Community recs come back by id, bypassing the searches' adult filter.
+      try { for (const item of await getMediaByIds([...ids].slice(0, 80), { excludeAdult: true })) candidates.set(item.id, item); }
       catch { partial = true; }
     }
     if (!candidates.size && browseResults.every(r => r.status === "rejected")) {

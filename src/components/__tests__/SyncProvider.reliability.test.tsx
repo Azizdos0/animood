@@ -13,6 +13,8 @@ const h = vi.hoisted(() => ({
   writes: [] as CloudRow[][],
   signals: [] as AbortSignal[],
   committedFailure: false,
+  prefSaves: [] as { uid: string; hidden: number[] }[],
+  prefUser: null as string | null,
 }));
 vi.mock("@/lib/supabase/client", () => ({
   isSupabaseConfigured: () => true,
@@ -22,7 +24,15 @@ vi.mock("@/lib/supabase/client", () => ({
       return { data: { subscription: { unsubscribe: () => {} } } };
     },
     signOut: async () => { h.auth?.("SIGNED_OUT", null); return { error: null }; },
+  },
+  // Discovery preferences: an empty table; saves are recorded per signed-in user.
+  from: () => ({ select: () => ({ eq: (_c: string, uid: string) => ({ abortSignal: () => ({
+    maybeSingle: async () => { h.prefUser = uid; return { data: null, error: null }; } }) }) }) }),
+  rpc: (_fn: string, args: { p_hidden_ids: number[]; p_client_updated_at: string }) => ({ abortSignal: async () => {
+    h.prefSaves.push({ uid: h.prefUser!, hidden: args.p_hidden_ids });
+    return { data: args.p_client_updated_at, error: null };
   } }),
+  }),
 }));
 vi.mock("@/lib/profile/queries", () => ({ getProfileByUserId: async () => null }));
 // Only the network boundary is replaced. Storage, merging, subscriptions and
@@ -61,6 +71,7 @@ import { SyncProvider, useAuth } from "@/components/SyncProvider";
 import { __resetListCacheForTests, deleteEntry, getSnapshot, setEntry } from "@/lib/list/reactive";
 import { setListOwner } from "@/lib/sync/owner";
 import { LIST_STORAGE_KEY } from "@/lib/list/storage";
+import { updateDiscoveryPreferences } from "@/lib/recommend/preferences";
 
 function Probe() {
   const auth = useAuth();
@@ -83,7 +94,7 @@ beforeEach(() => {
   h.rows.clear(); h.writes = []; h.auth = null;
   h.pullFailures = 0; h.writeFailures = 0; h.deleteFailures = 0;
   h.pullGate = null; h.writeGate = null;
-  h.signals = []; h.committedFailure = false;
+  h.signals = []; h.committedFailure = false; h.prefSaves = []; h.prefUser = null;
 });
 afterEach(() => { cleanup(); vi.useRealTimers(); localStorage.clear(); __resetListCacheForTests(); });
 
@@ -111,6 +122,16 @@ describe("account isolation and reliable sync", () => {
     expect(getSnapshot().entries).toEqual({});
     await auth("A");
     expect(getSnapshot().entries[1].score).toBe(9);
+  });
+
+  it("syncs discovery preferences for the signed-in account and stops on sign-out", async () => {
+    render(<SyncProvider><Probe /></SyncProvider>); await auth("A");
+    act(() => updateDiscoveryPreferences({ hiddenIds: [5] })); await tick(1000);
+    expect(h.prefSaves).toEqual([{ uid: "A", hidden: [5] }]);
+    expect(screen.getByText("synced")).toBeInTheDocument();
+    await auth(null);
+    act(() => updateDiscoveryPreferences({ hiddenIds: [6] })); await tick(5000);
+    expect(h.prefSaves).toHaveLength(1);
   });
 
   it("retries a failed write without needing another edit", async () => {

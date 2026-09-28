@@ -8,3 +8,5 @@ export const QUALITY_GLOBAL_MEAN = 6.5;
 export const W_MATCH = 1;
 export const W_QUALITY = 0.35;
 export const W_COMMUNITY = 0.6;
+// Extra quality weight applied when ranking for display (see present.ts).
+export const W_RANK_QUALITY = 1;

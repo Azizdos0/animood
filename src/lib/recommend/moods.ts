@@ -13,7 +13,7 @@ export const MOODS = [
   { id: "comfort", label: "Comfort zone", symbol: "☼", note: "A little lighter by the end.",
     heading: "Find your happy place.", genres: ["Comedy", "Slice of Life"], tags: ["Iyashikei", "Found Family", "Cute Girls Doing Cute Things"], avoid: ["Horror", "Thriller", "Tragedy", "Gore"] },
   { id: "romance", label: "Butterflies", symbol: "♡", note: "Almost-confessions. All the feelings.",
-    heading: "Let your heart pick.", genres: ["Romance"], tags: ["First Love", "Love Triangle", "Primarily Adult Cast"], avoid: [] },
+    heading: "Let your heart pick.", genres: ["Romance"], tags: ["Love Triangle", "Unrequited Love", "Yuri", "Boys' Love"], avoid: [] },
 ] as const;
 
 export type MoodId = typeof MOODS[number]["id"];

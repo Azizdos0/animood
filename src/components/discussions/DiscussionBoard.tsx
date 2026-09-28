@@ -55,7 +55,9 @@ function ThreadRow({ mediaId, thread }: { mediaId: number; thread: DiscussionThr
 
 export function DiscussionBoard({ mediaId }: { mediaId: number }) {
   const router = useRouter();
-  const [status, setStatus] = useState<Status>("loading");
+  const [status, setStatus] = useState<Status>(() =>
+    isSupabaseConfigured() ? "loading" : "unconfigured",
+  );
   const [threads, setThreads] = useState<DiscussionThread[]>([]);
   const [viewerId, setViewerId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
@@ -68,10 +70,7 @@ export function DiscussionBoard({ mediaId }: { mediaId: number }) {
     let cancelled = false;
     cancelledRef.current = false;
 
-    if (!isSupabaseConfigured()) {
-      setStatus("unconfigured");
-      return;
-    }
+    if (!isSupabaseConfigured()) return;
 
     async function load() {
       try {

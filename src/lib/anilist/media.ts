@@ -1,6 +1,6 @@
 import { anilistRequest } from "./client";
 import {
-  MEDIA_BY_ID_QUERY, MEDIA_BY_IDS_QUERY, MEDIA_BY_MAL_IDS_QUERY,
+  MEDIA_BY_ID_QUERY, MEDIA_BY_IDS_NON_ADULT_QUERY, MEDIA_BY_IDS_QUERY, MEDIA_BY_MAL_IDS_QUERY,
   RECOMMENDATIONS_QUERY, SEARCH_QUERY, TRENDING_QUERY,
 } from "./queries";
 import type {
@@ -107,14 +107,18 @@ export async function getRecommendationsFor(
     }));
 }
 
-export async function getMediaByIds(ids: number[]): Promise<Media[]> {
+/** `excludeAdult` drops adult titles; use it for anything we suggest rather than what the user listed. */
+export async function getMediaByIds(
+  ids: number[], opts: { excludeAdult?: boolean } = {}
+): Promise<Media[]> {
   if (ids.length === 0) return [];
+  const query = opts.excludeAdult ? MEDIA_BY_IDS_NON_ADULT_QUERY : MEDIA_BY_IDS_QUERY;
   const chunks: number[][] = [];
   for (let i = 0; i < ids.length; i += 50) chunks.push(ids.slice(i, i + 50));
 
   const results = await Promise.all(
     chunks.map((chunk) =>
-      anilistRequest<{ Page: { media: RawMedia[] } }>(MEDIA_BY_IDS_QUERY, {
+      anilistRequest<{ Page: { media: RawMedia[] } }>(query, {
         ids: chunk,
         perPage: 50,
       })

@@ -11,6 +11,7 @@ let mockState = {
   username: null as string | null,
   syncStatus: "synced" as SyncStatus,
   retrySync: vi.fn(),
+  authError: false,
 };
 vi.mock("@/components/SyncProvider", () => ({ useAuth: () => mockState }));
 
@@ -89,5 +90,14 @@ describe("AuthButton", () => {
     expect(signOut).not.toHaveBeenCalled();
     screen.getByRole("button", { name: /sign out/i }).click();
     expect(signOut).toHaveBeenCalled();
+  });
+
+  it("tells the user when the last sign-in did not finish", () => {
+    mockState = { ...mockState, user: null, configured: true, authError: true };
+    render(<AuthButton />);
+    expect(screen.getByRole("alert")).toHaveTextContent(/sign-in didn't finish/i);
+    screen.getByRole("button", { name: /try again/i }).click();
+    expect(signIn).toHaveBeenCalled();
+    mockState = { ...mockState, authError: false };
   });
 });

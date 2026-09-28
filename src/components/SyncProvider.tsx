@@ -24,6 +24,8 @@ interface AuthState {
   needsUsername: boolean;
   syncStatus: SyncStatus;
   retrySync: () => void;
+  /** Set when the last sign-in attempt failed or was cancelled. */
+  authError: boolean;
   signIn: () => void;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -31,7 +33,7 @@ interface AuthState {
 
 const Ctx = createContext<AuthState>({
   user: null, configured: false, username: null, needsUsername: false,
-  syncStatus: "local", retrySync: () => {},
+  syncStatus: "local", retrySync: () => {}, authError: false,
   signIn: () => {}, signOut: async () => {}, refreshProfile: async () => {},
 });
 
@@ -44,6 +46,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   const [needsUsername, setNeedsUsername] = useState(false);
   const [listStatus, setListStatus] = useState<SyncStatus>("local");
   const [prefsStatus, setPrefsStatus] = useState<SyncStatus>("local");
+  const [authError, setAuthError] = useState(false);
   const identity = useRef<{ userId: string | null }>({ userId: null });
   const sync = useRef<ReturnType<typeof startListSync> | null>(null);
   const prefsSync = useRef<ReturnType<typeof startPreferencesSync> | null>(null);
@@ -61,6 +64,21 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
     }
   }, [configured]);
 
+  // The OAuth callback reports failures as ?authError=1. Surface it once, then
+  // drop it from the URL so a reload or shared link doesn't repeat it.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams(window.location.search);
+      if (!params.has("authError")) return;
+      params.delete("authError");
+      const query = params.toString();
+      window.history.replaceState(window.history.state, "",
+        `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`);
+      setAuthError(true);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
+
   useEffect(() => {
     if (!configured) return;
     const supabase = supabaseBrowser();
@@ -72,6 +90,7 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
         avatarUrl: (session.user.user_metadata?.avatar_url as string) ?? null,
       } : null;
       setUser(authUser);
+      if (authUser) setAuthError(false);
       // Token refreshes must not restart sync or discard pending changes.
       if (uid !== null && identity.current.userId === uid) return;
 
@@ -110,18 +129,32 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
   function signIn() {
     if (!configured) return;
-    void supabaseBrowser().auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    });
+    setAuthError(false);
+    // Bring the user back to the page they signed in from.
+    const next = `${window.location.pathname}${window.location.search}`;
+    const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
+    void (async () => {
+      try {
+        const { error } = await supabaseBrowser().auth.signInWithOAuth({ provider: "google", options: { redirectTo } });
+        if (error) setAuthError(true);
+      } catch {
+        setAuthError(true);
+      }
+    })();
   }
   async function signOut() {
     if (!configured) return;
-    await supabaseBrowser().auth.signOut();
+    try {
+      const { error } = await supabaseBrowser().auth.signOut();
+      if (!error) return;
+    } catch { /* fall through */ }
+    // The server call failed (offline, expired session). Still end the session
+    // on this device so the button always does what it says.
+    await supabaseBrowser().auth.signOut({ scope: "local" }).catch(() => {});
   }
 
   return (
-    <Ctx.Provider value={{ user, configured, username, needsUsername,
+    <Ctx.Provider value={{ user, configured, username, needsUsername, authError,
       syncStatus: combineSyncStatus(listStatus, prefsStatus),
       retrySync: () => { sync.current?.retry(); prefsSync.current?.retry(); }, signIn, signOut, refreshProfile }}>
       {children}

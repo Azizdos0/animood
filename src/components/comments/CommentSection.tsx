@@ -103,7 +103,9 @@ function CommentRow({
 }
 
 export function CommentSection({ mediaId }: { mediaId: number }) {
-  const [status, setStatus] = useState<Status>("loading");
+  const [status, setStatus] = useState<Status>(() =>
+    isSupabaseConfigured() ? "loading" : "unconfigured",
+  );
   const [items, setItems] = useState<CommentItem[]>([]);
   const [viewerId, setViewerId] = useState<string | null>(null);
   const [body, setBody] = useState("");
@@ -115,10 +117,7 @@ export function CommentSection({ mediaId }: { mediaId: number }) {
     let cancelled = false;
     cancelledRef.current = false;
 
-    if (!isSupabaseConfigured()) {
-      setStatus("unconfigured");
-      return;
-    }
+    if (!isSupabaseConfigured()) return;
 
     async function load() {
       try {

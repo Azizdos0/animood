@@ -26,7 +26,9 @@ const fieldClass =
 
 export function CreateCommunityForm() {
   const router = useRouter();
-  const [status, setStatus] = useState<Status>("checking");
+  const [status, setStatus] = useState<Status>(() =>
+    isSupabaseConfigured() ? "checking" : "unconfigured",
+  );
   const [slug, setSlug] = useState("");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -34,10 +36,7 @@ export function CreateCommunityForm() {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isSupabaseConfigured()) {
-      setStatus("unconfigured");
-      return;
-    }
+    if (!isSupabaseConfigured()) return;
     let cancelled = false;
     supabaseBrowser()
       .auth.getUser()

@@ -30,16 +30,9 @@ export function UserSearch() {
   useEffect(() => {
     if (!configured) return;
     const trimmed = query.trim();
-    if (trimmed.length < MIN_QUERY_LENGTH) {
-      setResults(null);
-      setLoading(false);
-      setError(null);
-      return;
-    }
+    if (trimmed.length < MIN_QUERY_LENGTH) return;
 
     let cancelled = false;
-    setLoading(true);
-    setError(null);
 
     const timer = setTimeout(() => {
       searchUsers(supabaseBrowser(), trimmed)
@@ -73,7 +66,13 @@ export function UserSearch() {
       <input
         type="text"
         value={query}
-        onChange={(e) => setQuery(e.target.value)}
+        onChange={(e) => {
+          const next = e.target.value;
+          setQuery(next);
+          // Reset per keystroke so a pending search shows the skeleton, not stale results.
+          setLoading(next.trim().length >= MIN_QUERY_LENGTH);
+          setError(null);
+        }}
         aria-label="Search users"
         placeholder="Search by username..."
         className="w-full rounded-2xl border border-border bg-surface/40 px-4 py-3 text-sm outline-none transition-colors focus:border-border-strong"

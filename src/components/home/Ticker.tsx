@@ -1,7 +1,5 @@
-export function Ticker({ items }: { items: string[] }) {
-  if (items.length === 0) return null;
-
-  const Row = ({ hidden }: { hidden?: boolean }) => (
+function TickerRow({ items, hidden }: { items: string[]; hidden?: boolean }) {
+  return (
     <div className="flex shrink-0 items-center gap-8 pr-8" aria-hidden={hidden || undefined}>
       {items.map((t, i) => (
         <span key={i} className="flex items-center gap-8 whitespace-nowrap">
@@ -11,12 +9,16 @@ export function Ticker({ items }: { items: string[] }) {
       ))}
     </div>
   );
+}
+
+export function Ticker({ items }: { items: string[] }) {
+  if (items.length === 0) return null;
 
   return (
     <div className="overflow-hidden border-y border-border bg-background">
       <div className="animate-ticker mono flex w-max py-3 text-[12px] tracking-[0.14em] text-muted-2">
-        <Row />
-        <Row hidden />
+        <TickerRow items={items} />
+        <TickerRow items={items} hidden />
       </div>
     </div>
   );

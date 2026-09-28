@@ -40,18 +40,16 @@ function CommunityCard({ community }: { community: Community }) {
 }
 
 export function CommunityDirectory() {
-  const [status, setStatus] = useState<Status>("loading");
+  const [status, setStatus] = useState<Status>(() =>
+    isSupabaseConfigured() ? "loading" : "unconfigured",
+  );
   const [communities, setCommunities] = useState<Community[]>([]);
   const [query, setQuery] = useState("");
 
   useEffect(() => {
-    if (!isSupabaseConfigured()) {
-      setStatus("unconfigured");
-      return;
-    }
+    if (!isSupabaseConfigured()) return;
 
     let cancelled = false;
-    setStatus("loading");
 
     const timer = setTimeout(() => {
       listCommunities(supabaseBrowser(), query)
@@ -82,7 +80,10 @@ export function CommunityDirectory() {
         <input
           type="search"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setStatus("loading");
+          }}
           aria-label="Search communities"
           placeholder="Search communities…"
           className="min-w-48 flex-1 rounded-2xl border border-border bg-surface/40 px-4 py-3 text-sm outline-none transition-colors focus:border-border-strong"

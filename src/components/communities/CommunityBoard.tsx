@@ -75,7 +75,9 @@ export function CommunityBoard({
   signedIn: boolean;
 }) {
   const router = useRouter();
-  const [status, setStatus] = useState<Status>("ready");
+  const [status, setStatus] = useState<Status>(() =>
+    isSupabaseConfigured() ? "ready" : "unconfigured",
+  );
   const [threads, setThreads] = useState<DiscussionThread[]>(initialThreads);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -87,10 +89,7 @@ export function CommunityBoard({
     let cancelled = false;
     cancelledRef.current = false;
 
-    if (!isSupabaseConfigured()) {
-      setStatus("unconfigured");
-      return;
-    }
+    if (!isSupabaseConfigured()) return;
 
     async function load() {
       try {

@@ -1,10 +1,10 @@
 import { anilistRequest } from "./client";
 import {
-  MEDIA_BY_ID_QUERY, MEDIA_BY_IDS_NON_ADULT_QUERY, MEDIA_BY_IDS_QUERY, MEDIA_BY_MAL_IDS_QUERY,
+  AIRING_NOW_QUERY, MEDIA_BY_ID_QUERY, MEDIA_BY_IDS_NON_ADULT_QUERY, MEDIA_BY_IDS_QUERY, MEDIA_BY_MAL_IDS_QUERY,
   RECOMMENDATIONS_QUERY, SEARCH_QUERY, TRENDING_QUERY,
 } from "./queries";
 import type {
-  Media, MediaFormat, MediaRecommendation, MediaStub, MediaType,
+  Media, MediaFormat, MediaRecommendation, MediaStatus, MediaStub, MediaType, NextAiringEpisode,
 } from "./types";
 
 interface RawTitle { romaji: string | null; english: string | null; native?: string | null }
@@ -23,6 +23,8 @@ export interface RawMedia extends RawStub {
   averageScore: number | null;
   popularity: number;
   seasonYear: number | null;
+  status?: MediaStatus | null;
+  nextAiringEpisode?: NextAiringEpisode | null;
   relations: { edges: { relationType: string; node: RawStub }[] };
 }
 
@@ -48,6 +50,9 @@ export function mapMedia(raw: RawMedia): Media {
     averageScore: raw.averageScore,
     popularity: raw.popularity ?? 0,
     seasonYear: raw.seasonYear,
+    status: raw.status ?? null,
+    nextAiringEpisode: raw.nextAiringEpisode
+      ? { episode: raw.nextAiringEpisode.episode, airingAt: raw.nextAiringEpisode.airingAt } : null,
     relations: (raw.relations?.edges ?? []).map((e) => ({
       relationType: e.relationType, node: mapStub(e.node),
     })),
@@ -84,6 +89,14 @@ export async function getMediaById(id: number): Promise<Media | null> {
 export async function getTrending(type: MediaType, perPage = 20): Promise<Media[]> {
   const data = await anilistRequest<{ Page: { media: RawMedia[] } }>(
     TRENDING_QUERY, { type, perPage }
+  );
+  return data.Page.media.map(mapMedia);
+}
+
+/** Popular anime airing now. Cached 30 min; episode times are absolute, so staleness only delays new shows. */
+export async function getAiringNow(perPage = 50): Promise<Media[]> {
+  const data = await anilistRequest<{ Page: { media: RawMedia[] } }>(
+    AIRING_NOW_QUERY, { perPage }, { revalidateSeconds: 1800 }
   );
   return data.Page.media.map(mapMedia);
 }

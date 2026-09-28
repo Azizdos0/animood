@@ -137,3 +137,12 @@ export function UsersIcon(p: IconProps) {
     </Svg>
   );
 }
+
+export function CalendarIcon(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <rect x="3" y="4.5" width="18" height="16" rx="2.5" />
+      <path d="M8 2.75v3.5M16 2.75v3.5M3 9.5h18" />
+    </Svg>
+  );
+}

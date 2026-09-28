@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import type { Route } from "next";
 import type { ComponentType } from "react";
 import {
-  HomeIcon, SearchIcon, SparklesIcon, BookmarkIcon, ChartIcon, InboxIcon, CompassIcon, UsersIcon,
+  HomeIcon, SearchIcon, SparklesIcon, BookmarkIcon, ChartIcon, InboxIcon, CompassIcon, UsersIcon, CalendarIcon,
 } from "@/components/icons";
 import { AuthButton } from "@/components/AuthButton";
 
@@ -19,6 +19,7 @@ const NAV: NavItem[] = [
   { href: "/", label: "Home", Icon: HomeIcon },
   { href: "/search", label: "Search", Icon: SearchIcon },
   { href: "/recommendations", label: "For You", Icon: SparklesIcon },
+  { href: "/schedule", label: "Schedule", Icon: CalendarIcon },
   { href: "/feed", label: "Feed", Icon: InboxIcon },
   { href: "/users", label: "People", Icon: CompassIcon },
   { href: "/communities", label: "Groups", Icon: UsersIcon },
@@ -41,8 +42,8 @@ export function Navbar() {
           <span className="jp text-[15px] leading-none text-pink">アニムード</span>
         </Link>
 
-        {/* Desktop nav */}
-        <nav className="hidden items-center gap-6 text-[13px] font-semibold tracking-[0.02em] sm:flex">
+        {/* Desktop nav (lg+: nine links need ~1024px; tablets use the bottom bar) */}
+        <nav className="hidden items-center gap-6 text-[13px] font-semibold tracking-[0.02em] lg:flex">
           {NAV.map(({ href, label }) => {
             const active = isActive(pathname, href);
             return (
@@ -64,8 +65,8 @@ export function Navbar() {
       </header>
 
       {/* Mobile bottom nav */}
-      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/90 backdrop-blur-xl sm:hidden">
-        <div className="mx-auto grid max-w-md grid-cols-8">
+      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/90 backdrop-blur-xl lg:hidden">
+        <div className="mx-auto grid max-w-md grid-cols-9">
           {NAV.map(({ href, label, Icon }) => {
             const active = isActive(pathname, href);
             return (

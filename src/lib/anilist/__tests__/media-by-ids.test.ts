@@ -30,6 +30,20 @@ describe("getMediaByIds", () => {
     expect(items[0].title).toMatch(/^T/);
   });
 
+  it("filters adult titles in the query only when asked", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true, status: 200, headers: { get: () => null },
+      json: async () => ({ data: { Page: { media: [] } } }),
+    } as unknown as Response);
+    vi.stubGlobal("fetch", fetchMock);
+    const queryOf = (call: number) => JSON.parse(fetchMock.mock.calls[call][1].body).query as string;
+
+    await getMediaByIds([1]);
+    await getMediaByIds([1], { excludeAdult: true });
+    expect(queryOf(0)).not.toContain("isAdult");
+    expect(queryOf(1)).toContain("isAdult: false");
+  });
+
   it("chunks ids into batches of 50", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true, status: 200, headers: { get: () => null },

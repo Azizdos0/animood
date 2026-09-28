@@ -81,6 +81,18 @@ describe("/api/recommendations", () => {
     expect(body.pool.some((c: { media: { id: number } }) => c.media.id === 99)).toBe(true);
   });
 
+  it("fetches community candidates without adult titles but keeps the user's own titles unfiltered", async () => {
+    const spy = vi.spyOn(media, "getMediaByIds").mockImplementation(async (ids: number[]) =>
+      ids.map((id) => m(id, [[10, "Time Loop", 100]]))
+    );
+    vi.spyOn(media, "getRecommendationsFor").mockResolvedValue([
+      { mediaId: 99, rating: 50, media: { id: 99, title: "R", coverImage: null, format: "TV" } },
+    ]);
+    await POST(req({ list: [{ id: 1, score: 9, status: "completed" }] }));
+    expect(spy).toHaveBeenCalledWith([1]);
+    expect(spy).toHaveBeenCalledWith([99], { excludeAdult: true });
+  });
+
   it("bases the source-signal mean on the fetched `rated` set, not the raw list, when a media fetch misses", async () => {
     // id 3's media fetch "misses" (e.g. deleted/unavailable on AniList) — the
     // rated basis is only {1: 9, 2: 9}, mean 9. The raw list basis would be

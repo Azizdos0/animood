@@ -48,3 +48,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=<your anon public key>
   existing database ownership policies still enforce access to writes.
 
 These changes require no additional environment variables or database migration.
+
+## Discovery preferences sync
+
+Migration `0014_discovery_preferences.sql` adds the `discovery_preferences` table and the `save_discovery_preferences` RPC. Signed-in users' starter favorites, hidden titles, variety and genre exclusions then follow them across devices. The app is safe to deploy before the migration: preference sync stays off, without showing an error, until the table exists.

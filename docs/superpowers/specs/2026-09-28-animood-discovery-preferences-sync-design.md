@@ -1,7 +1,7 @@
 # Animood — Discovery Preferences Sync Design Spec
 
 **Date:** 2026-09-28
-**Status:** Draft — awaiting approval (see §9 open questions)
+**Status:** Approved 2026-09-28 (decisions in §9)
 **Scope:** Sync the discovery preferences of signed-in users through Supabase
 
 ## 1. Goal & scope
@@ -119,7 +119,7 @@ either session errors, and `syncing` while either is syncing (see §9 Q2).
 | Supabase not configured / signed out | No session; unchanged local behaviour |
 | Pull fails on sign-in | Keep local values, retry with backoff; UI is never blocked |
 | Push rejected as stale | Pull and apply the newer cloud version |
-| Row violates a check constraint | Not retried (would loop); logged, local kept |
+| Row violates a check constraint | Indicator shows error; not retried until the next edit (would loop); local kept |
 | Sign-out mid-request | Request aborted; the response is ignored |
 
 ## 6. Testing
@@ -160,18 +160,25 @@ either session errors, and `syncing` while either is syncing (see §9 Q2).
 5. Docs: `MOOD_DISCOVERY.md` "Storage" section and `SUPABASE_SETUP.md`.
 6. Manual check with two browsers on the Vercel preview.
 
-## 9. Open questions (need a decision before planning)
+## 9. Decisions (approved 2026-09-28)
 
-1. **Conflict granularity.** Whole-document last-write-wins can lose a
-   simultaneous edit from another device. The alternative is per-field
-   timestamps, which cost 4 extra columns and more merge code.
-   *Recommendation: whole-document for v1.*
-2. **Indicator.** Should preference sync errors show in the account indicator
-   (proposed), or retry silently?
-   *Recommendation: show them, because silently lost preferences are worse.*
-3. **Guest → account on first sign-in.** Guest preferences currently stay with
-   the guest, matching how the list's guest slot is only claimed when no owner
-   is set. Should an unowned guest's preferences follow the same claim rule?
-   *Recommendation: yes, reuse the list's claim rule.*
-4. **Migration rollout.** Applying 0014 to the production Supabase project
-   needs either you or Supabase connector access for this session.
+1. **Conflict granularity: whole-document last-write-wins.** A simultaneous edit
+   on another device can be lost. This was accepted because preferences change
+   rarely.
+2. **Indicator: preference sync errors show in the account indicator**, combined
+   with the list status as described in §4.
+3. **Guest → account: reuse the list's claim rule.** On sign-in, guest preferences
+   (`animood.list.v1.discovery.v1`) move into the account's key when they are
+   newer than the account's local copy. The guest key is then removed, just as
+   the guest list slot is migrated and cleared.
+   - Preferences stored before this feature have no `updatedAt`. They are treated
+     as the oldest possible version: they upload when the cloud has no row, and
+     lose to any existing cloud row. Existing signed-in users therefore keep what
+     they have, and a new device never overwrites real cloud data.
+4. **Migration rollout: the migration file ships with the code.** Applying it to
+   the production Supabase project is a separate step that needs the owner's
+   explicit go-ahead. Until it is applied, the session sees "table/function not
+   found" (PostgREST `PGRST205`/`PGRST202`, Postgres `42P01`/`42883`) and stops
+   quietly for that sign-in. It does not retry, and it does not show an error in
+   the indicator, so deploying the code first is safe. List sync is unaffected,
+   and preferences keep working locally.

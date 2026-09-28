@@ -15,7 +15,15 @@ Mood and catalog type live in the URL, so links, reloads, and browser history re
 
 ## Storage and failures
 
-Starter favorites, hidden titles, variety, and genre exclusions are stored under the active list account's browser namespace. They are isolated from other accounts and the guest session. These discovery preferences do **not** currently sync through Supabase; tracked list additions use the existing list sync path.
+Starter favorites, hidden titles, variety, and genre exclusions are stored under the active list account's browser namespace. They are isolated from other accounts and the guest session.
+
+For signed-in users they also sync through Supabase (`discovery_preferences`, migration 0014; design in `docs/superpowers/specs/2026-09-28-animood-discovery-preferences-sync-design.md`). `src/lib/sync/preferences.ts` handles the sync:
+
+- On sign-in it pulls the account's row, and the newer version wins. Edits push after a 1 s debounce.
+- The database refuses writes older than the stored version.
+- Guest preferences move into the account on sign-in, following the list's claim rule.
+- Data saved before sync existed counts as the oldest version: it uploads to an empty cloud but never overwrites an existing row.
+- Until the migration is applied, the session stops quietly and preferences stay local.
 
 Requests are canceled on mood, type, taste, or account changes. Late responses cannot replace the current account's recommendations. Individual catalog failures allow partial results; total failures offer retry. The homepage keeps mood entry points and list progress available when trending fails.
 

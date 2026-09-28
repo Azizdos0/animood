@@ -5,6 +5,16 @@ import { isSupabaseConfigured, supabaseBrowser } from "@/lib/supabase/client";
 import { setListAccount } from "@/lib/list/reactive";
 import { getProfileByUserId } from "@/lib/profile/queries";
 import { startListSync, type SyncStatus } from "@/lib/sync/session";
+import { startPreferencesSync } from "@/lib/sync/preferences";
+
+/** One indicator for list + preference sync. A "local" preference session (feature
+ * not deployed) defers to the list; otherwise any error, then any activity, wins. */
+export function combineSyncStatus(list: SyncStatus, prefs: SyncStatus): SyncStatus {
+  if (prefs === "local") return list;
+  if (list === "error" || prefs === "error") return "error";
+  if (list === "syncing" || prefs === "syncing") return "syncing";
+  return list;
+}
 
 interface AuthUser { email: string | null; avatarUrl: string | null; }
 interface AuthState {
@@ -32,9 +42,11 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [username, setUsername] = useState<string | null>(null);
   const [needsUsername, setNeedsUsername] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<SyncStatus>("local");
+  const [listStatus, setListStatus] = useState<SyncStatus>("local");
+  const [prefsStatus, setPrefsStatus] = useState<SyncStatus>("local");
   const identity = useRef<{ userId: string | null }>({ userId: null });
   const sync = useRef<ReturnType<typeof startListSync> | null>(null);
+  const prefsSync = useRef<ReturnType<typeof startPreferencesSync> | null>(null);
 
   const refreshProfile = useCallback(async () => {
     const current = identity.current;
@@ -65,6 +77,8 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
 
       sync.current?.stop();
       sync.current = null;
+      prefsSync.current?.stop();
+      prefsSync.current = null;
       clearTimeout(profileTimer);
       identity.current = { userId: uid };
       setUsername(null);
@@ -72,17 +86,23 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
       if (uid === null) {
         // Account data remains in its own namespace. Guests see a separate list.
         try { setListAccount(null); } catch { /* legacy data stays protected */ }
-        setSyncStatus("local");
+        setListStatus("local");
+        setPrefsStatus("local");
         return;
       }
-      setSyncStatus("syncing");
-      sync.current = startListSync(supabase, uid, setSyncStatus);
+      setListStatus("syncing");
+      setPrefsStatus("syncing");
+      sync.current = startListSync(supabase, uid, setListStatus);
+      // After the list session has selected this account's storage scope.
+      prefsSync.current = startPreferencesSync(supabase, uid, setPrefsStatus);
       profileTimer = setTimeout(() => { void refreshProfile(); }, 0);
     });
     return () => {
       sub.subscription.unsubscribe();
       sync.current?.stop();
       sync.current = null;
+      prefsSync.current?.stop();
+      prefsSync.current = null;
       identity.current = { userId: null };
       clearTimeout(profileTimer);
     };
@@ -101,8 +121,9 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <Ctx.Provider value={{ user, configured, username, needsUsername, syncStatus,
-      retrySync: () => sync.current?.retry(), signIn, signOut, refreshProfile }}>
+    <Ctx.Provider value={{ user, configured, username, needsUsername,
+      syncStatus: combineSyncStatus(listStatus, prefsStatus),
+      retrySync: () => { sync.current?.retry(); prefsSync.current?.retry(); }, signIn, signOut, refreshProfile }}>
       {children}
     </Ctx.Provider>
   );

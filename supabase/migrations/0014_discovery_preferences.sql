@@ -3,6 +3,21 @@
 -- directly; all writes go through save_discovery_preferences, which refuses
 -- versions older than the stored one.
 
+-- An earlier, never-shipped revision-based draft (preferences jsonb + revision,
+-- save_discovery_preferences(uuid, bigint, jsonb)) was applied to production on
+-- 2026-09-18 without matching app code. Replace it only when it holds no data.
+do $$
+begin
+  if exists (select 1 from information_schema.columns where table_schema = 'public'
+             and table_name = 'discovery_preferences' and column_name = 'revision') then
+    if exists (select 1 from public.discovery_preferences) then
+      raise exception 'discovery_preferences (old draft) has rows; migrate them before applying 0014';
+    end if;
+    drop table public.discovery_preferences;
+  end if;
+end $$;
+drop function if exists public.save_discovery_preferences(uuid, bigint, jsonb);
+
 create table if not exists public.discovery_preferences (
   user_id           uuid        primary key references auth.users(id) on delete cascade,
   seeds             jsonb       not null default '[]'

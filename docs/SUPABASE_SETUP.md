@@ -5,8 +5,8 @@ without these (local-only mode); the sign-in button appears once the env vars
 are set.
 
 ## 1. Supabase project
-- A project is created and the `list_entries` migration
-  (`supabase/migrations/0001_list_entries.sql`) is applied.
+- A project is created and every migration in `supabase/migrations/` is
+  applied in filename order.
 - Copy the project's **URL** and **anon public key** (Project Settings → API).
 
 ## 2. Env vars

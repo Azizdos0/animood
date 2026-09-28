@@ -1,36 +1,76 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Animood
 
-## Getting Started
+Anime & manga tracker with mood-based recommendations and a social layer.
 
-First, run the development server:
+- **Lists** — track anime/manga and import from MyAnimeList. Lists are stored in
+  the browser; signing in syncs them to the cloud.
+- **Recommendations** — pick a mood (`/recommendations?mood=calm`) and get picks
+  ranked from your ratings, community recommendations and starter favorites,
+  with a reason for each. See [docs/MOOD_DISCOVERY.md](docs/MOOD_DISCOVERY.md).
+- **Stats** — score histogram, genre/tag breakdowns and a shareable stats card.
+- **Social** — public profiles (`/u/<username>`), follows and a feed, comments,
+  per-title discussion threads, and user-created communities with moderation.
+
+Catalog data comes from the [AniList](https://anilist.co) GraphQL API.
+
+## Stack
+
+Next.js 16 (App Router) · React 19 · Tailwind CSS v4 · Supabase (auth, Postgres,
+row-level security) · Vitest + Testing Library.
+
+> Next.js 16 has breaking changes from earlier versions — see [AGENTS.md](AGENTS.md).
+
+## Getting started
+
+Requires Node 22.12 or newer (see `.nvmrc`).
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev        # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Without Supabase configured the app runs in **local-only mode**: browsing,
+recommendations, lists and stats work, with the list stored in the browser.
+Sign-in, sync and all social features need Supabase.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Supabase (optional)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Create a Supabase project and apply every migration in
+   `supabase/migrations/` in filename order.
+2. Copy `.env.local.example` to `.env.local` and fill in:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=
+   ```
+3. Set up Google sign-in and redirect URLs — see
+   [docs/SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md).
 
-## Learn More
+## Scripts
 
-To learn more about Next.js, take a look at the following resources:
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Dev server |
+| `npm run build` | Production build |
+| `npm run lint` | ESLint |
+| `npm test` | Vitest, single run (`npm run test:watch` to watch) |
+| `npx next typegen && npx tsc --noEmit` | Typecheck (typegen creates Next's route types) |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+CI (`.github/workflows/ci.yml`) runs lint, typecheck, tests and build on every
+pull request.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project layout
 
-## Deploy on Vercel
+```
+src/app/           routes (pages + API route handlers)
+src/components/    UI components, tests in __tests__/
+src/lib/           domain logic: anilist, recommend, stats, sync, communities, …
+supabase/          SQL migrations
+docs/              setup + feature docs; design specs/plans in docs/superpowers/
+design-system/     visual design rules
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Deployment
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Deployable to Vercel (`vercel.json` schedules a daily `/api/keepalive` cron that
+stops a free-tier Supabase project from pausing) or Netlify (`netlify.toml`).
+Set the two Supabase env vars in the host's settings.

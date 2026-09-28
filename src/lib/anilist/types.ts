@@ -38,6 +38,17 @@ export interface Media {
   popularity: number;
   seasonYear: number | null;
   relations: MediaRelationEdge[];
+  /** Absent on fixtures/older payloads; null when AniList reports none. */
+  status?: MediaStatus | null;
+  nextAiringEpisode?: NextAiringEpisode | null;
+}
+
+export type MediaStatus = "FINISHED" | "RELEASING" | "NOT_YET_RELEASED" | "CANCELLED" | "HIATUS";
+
+export interface NextAiringEpisode {
+  episode: number;
+  /** Unix seconds. Absolute, so it stays correct however long the response was cached. */
+  airingAt: number;
 }
 
 export interface MediaRecommendation {

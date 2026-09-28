@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { mapMedia, searchMedia, getMediaById } from "@/lib/anilist/media";
+import { mapMedia, searchMedia, getMediaById, getAiringNow } from "@/lib/anilist/media";
 
 const rawMedia = {
   id: 1, type: "ANIME",
@@ -27,6 +27,16 @@ describe("mapMedia", () => {
     expect(m.tags[0]).toEqual({ id: 10, name: "Time Travel", rank: 95 });
     expect(m.relations[0].relationType).toBe("SEQUEL");
     expect(m.relations[0].node.id).toBe(2);
+  });
+
+  it("maps airing status and the next episode, defaulting to null", () => {
+    const airing = mapMedia({ ...rawMedia, status: "RELEASING",
+      nextAiringEpisode: { episode: 8, airingAt: 1790700000, timeUntilAiring: 5 } } as never);
+    expect(airing.status).toBe("RELEASING");
+    expect(airing.nextAiringEpisode).toEqual({ episode: 8, airingAt: 1790700000 });
+    const old = mapMedia(rawMedia as never);
+    expect(old.status).toBeNull();
+    expect(old.nextAiringEpisode).toBeNull();
   });
 
   it("prefers english title, falls back to romaji", () => {
@@ -65,5 +75,26 @@ describe("getMediaById", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     expect(await getMediaById(999)).toBeNull();
+  });
+});
+
+describe("getAiringNow", () => {
+  beforeEach(() => vi.restoreAllMocks());
+
+  it("asks for popular, non-adult anime that is releasing, cached for 30 minutes", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true, status: 200, headers: { get: () => null },
+      json: async () => ({ data: { Page: { media: [{ ...rawMedia, status: "RELEASING",
+        nextAiringEpisode: { episode: 3, airingAt: 100 } }] } } }),
+    } as unknown as Response);
+    vi.stubGlobal("fetch", fetchMock);
+    const items = await getAiringNow(10);
+    expect(items[0].nextAiringEpisode).toEqual({ episode: 3, airingAt: 100 });
+    const [, init] = fetchMock.mock.calls[0];
+    const body = JSON.parse(init.body);
+    expect(body.query).toContain("status: RELEASING");
+    expect(body.query).toContain("isAdult: false");
+    expect(body.variables).toEqual({ perPage: 10 });
+    expect(init.next).toEqual({ revalidate: 1800 });
   });
 });

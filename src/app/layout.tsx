@@ -54,7 +54,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <SyncProvider>
           <Navbar />
           <ProfileGate />
-          <main className="flex-1 pb-24 sm:pb-0">{children}</main>
+          <main className="flex-1 pb-24 lg:pb-0">{children}</main>
           <footer className="mx-auto flex w-full max-w-[1560px] flex-wrap items-center justify-between gap-6 border-t border-border px-6 py-11 sm:px-10">
             <div className="flex items-baseline gap-2.5">
               <span className="text-3xl font-black tracking-[-0.04em]">ANIMOOD</span>

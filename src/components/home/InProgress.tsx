@@ -4,11 +4,14 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useListStore, setEntry } from "@/lib/list/reactive";
 import type { Media } from "@/lib/anilist/types";
+import { episodesBehind, formatCountdown } from "@/lib/schedule/airing";
+import { useNow } from "@/lib/schedule/useNow";
 
 const ACCENTS = ["var(--pink)", "var(--violet)", "var(--foreground)"];
 
 export function InProgress() {
   const store = useListStore();
+  const now = useNow();
   const entries = Object.entries(store.entries);
   const watchingIds = entries.filter(([, e]) => e.status === "watching").map(([id]) => Number(id));
   const watching = watchingIds.length;
@@ -70,6 +73,8 @@ export function InProgress() {
               const total = m ? (m.type === "ANIME" ? m.episodes : m.chapters) : null;
               const pct = total ? Math.min(100, Math.round((entry.progress / total) * 100)) : 0;
               const unit = m?.type === "MANGA" ? "CH" : "EP";
+              const next = m?.nextAiringEpisode ?? null;
+              const behind = now === null ? 0 : episodesBehind(entry.progress, next, now);
               return (
                 <div key={id} className="flex items-center gap-4 rounded-2xl border border-border bg-surface-2 p-3.5">
                   <Link href={`/media/${id}`} className="h-16 w-11 shrink-0 overflow-hidden rounded-lg stripe-fill">
@@ -90,6 +95,16 @@ export function InProgress() {
                     <div className="mt-2.5 h-1 overflow-hidden rounded-full bg-border-strong">
                       <div className="h-full rounded-full" style={{ width: `${pct}%`, background: ACCENTS[i % 3] }} />
                     </div>
+                    {now !== null && next && (
+                      <div className="mono mt-2 flex gap-3 text-[10px] text-muted-2">
+                        {behind > 0 && <span className="font-bold text-pink">{behind} NEW</span>}
+                        {next.airingAt * 1000 > now && (
+                          <Link href="/schedule" className="hover:text-foreground">
+                            EP {next.episode} {formatCountdown(next.airingAt, now).toUpperCase()}
+                          </Link>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <button
                     type="button"

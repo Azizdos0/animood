@@ -8,6 +8,9 @@ Anime & manga tracker with mood-based recommendations and a social layer.
   ranked from your ratings, community recommendations and starter favorites,
   with a reason for each. See [docs/MOOD_DISCOVERY.md](docs/MOOD_DISCOVERY.md).
 - **Stats** — score histogram, genre/tag breakdowns and a shareable stats card.
+- **Airing schedule** — `/schedule` lists next episodes for the coming week in your
+  local time (your shows first, or everything popular that's airing), and the home
+  page shows countdowns and new-episode counts for shows you're watching.
 - **Social** — public profiles (`/u/<username>`), follows and a feed, comments,
   per-title discussion threads, and user-created communities with moderation.
 

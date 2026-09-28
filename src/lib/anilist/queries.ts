@@ -13,6 +13,8 @@ export const MEDIA_FIELDS = `
   averageScore
   popularity
   seasonYear
+  status
+  nextAiringEpisode { episode airingAt }
   relations {
     edges {
       relationType
@@ -44,6 +46,17 @@ export const TRENDING_QUERY = `
   query Trending($type: MediaType, $perPage: Int) {
     Page(page: 1, perPage: $perPage) {
       media(type: $type, sort: TRENDING_DESC, isAdult: false) {
+        ${MEDIA_FIELDS}
+      }
+    }
+  }
+`;
+
+// Popular shows airing now, each with its next episode: one request covers the schedule.
+export const AIRING_NOW_QUERY = `
+  query AiringNow($perPage: Int) {
+    Page(page: 1, perPage: $perPage) {
+      media(type: ANIME, status: RELEASING, sort: POPULARITY_DESC, isAdult: false) {
         ${MEDIA_FIELDS}
       }
     }

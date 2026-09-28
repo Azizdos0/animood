@@ -6,6 +6,7 @@ import { useAuth } from "@/components/SyncProvider";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { createProfile } from "@/lib/profile/queries";
 import { validateUsername, type UsernameError } from "@/lib/profile/username";
+import { safeNextPath } from "@/lib/auth/redirect";
 
 const ERROR_COPY: Record<UsernameError, string> = {
   too_short: "Usernames must be at least 3 characters.",
@@ -14,11 +15,8 @@ const ERROR_COPY: Record<UsernameError, string> = {
   reserved: "That username is reserved.",
 };
 
-const safeNext = (n: string | null): string =>
-  n && n.startsWith("/") && !n.startsWith("//") ? n : "/";
-
 export function WelcomeForm() {
-  const { user, refreshProfile } = useAuth();
+  const { user, configured, signIn, refreshProfile } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next");
@@ -43,6 +41,10 @@ export function WelcomeForm() {
       const supabase = supabaseBrowser();
       const authResult = await supabase.auth?.getUser?.();
       const userId: string = authResult?.data?.user?.id ?? "";
+      if (!userId) {
+        setError("Your session has ended. Sign in again to claim a username.");
+        return;
+      }
       const displayName = user?.email ? user.email.split("@")[0] : null;
 
       const result = await createProfile(supabase, {
@@ -62,12 +64,29 @@ export function WelcomeForm() {
       }
 
       await refreshProfile();
-      router.replace(safeNext(next));
+      router.replace(safeNextPath(next));
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (configured && !user) {
+    return (
+      <div className="mx-auto max-w-[560px] space-y-5">
+        <p className="text-sm leading-6 text-muted-foreground">
+          Sign in with Google first, then pick the username for your profile.
+        </p>
+        <button
+          type="button"
+          onClick={signIn}
+          className="w-full rounded-full bg-foreground px-5 py-3 text-sm font-extrabold text-background transition-colors hover:bg-pink"
+        >
+          Sign in with Google
+        </button>
+      </div>
+    );
   }
 
   return (

@@ -7,9 +7,18 @@ let searchParams = new URLSearchParams("");
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push, replace: push }), useSearchParams: () => searchParams }));
 const createProfile = vi.fn(async (..._args: unknown[]) => ({ ok: false, error: "taken" }));
 vi.mock("@/lib/profile/queries", () => ({ createProfile: (...a: unknown[]) => createProfile(...a) }));
-vi.mock("@/lib/supabase/client", () => ({ isSupabaseConfigured: () => true, supabaseBrowser: () => ({}) }));
+let authUserId: string | null = "u1";
+vi.mock("@/lib/supabase/client", () => ({
+  isSupabaseConfigured: () => true,
+  supabaseBrowser: () => ({ auth: { getUser: async () => ({ data: { user: authUserId ? { id: authUserId } : null } }) } }),
+}));
+const signIn = vi.fn();
+let authState = {
+  user: { email: "a@b.c", avatarUrl: null } as { email: string; avatarUrl: null } | null,
+  configured: true, signIn, username: null, refreshProfile: async () => {},
+};
 vi.mock("@/components/SyncProvider", () => ({
-  useAuth: () => ({ user: { email: "a@b.c", avatarUrl: null }, username: null, refreshProfile: async () => {} }),
+  useAuth: () => authState,
 }));
 
 import { WelcomeForm } from "@/components/WelcomeForm";
@@ -41,5 +50,25 @@ describe("WelcomeForm", () => {
     await userEvent.click(screen.getByRole("button", { name: /claim/i }));
     await waitFor(() => expect(push).toHaveBeenCalledWith("/"));
     searchParams = new URLSearchParams("");
+  });
+
+  it("asks a signed-out visitor to sign in instead of showing the form", async () => {
+    authState = { ...authState, user: null };
+    render(<WelcomeForm />);
+    expect(screen.queryByLabelText(/username/i)).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: /sign in with google/i }));
+    expect(signIn).toHaveBeenCalledOnce();
+    authState = { ...authState, user: { email: "a@b.c", avatarUrl: null } };
+  });
+
+  it("does not try to create a profile when the session has ended", async () => {
+    authUserId = null;
+    createProfile.mockClear();
+    render(<WelcomeForm />);
+    await userEvent.type(screen.getByLabelText(/username/i), "aziz");
+    await userEvent.click(screen.getByRole("button", { name: /claim/i }));
+    expect(await screen.findByText(/session has ended/i)).toBeInTheDocument();
+    expect(createProfile).not.toHaveBeenCalled();
+    authUserId = "u1";
   });
 });

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useAuth } from "@/components/SyncProvider";
 
 export function AuthButton() {
-  const { user, configured, signIn, signOut, username, syncStatus, retrySync } = useAuth();
+  const { user, configured, signIn, signOut, username, syncStatus, retrySync, authError } = useAuth();
 
   if (!configured) {
     return (
@@ -17,13 +17,20 @@ export function AuthButton() {
 
   if (!user) {
     return (
-      <button
-        type="button"
-        onClick={signIn}
-        className="rounded-full bg-foreground px-4 py-2 text-[12px] font-extrabold text-background transition-colors hover:bg-pink"
-      >
-        Sign in
-      </button>
+      <div className="flex items-center gap-2.5">
+        {authError && (
+          <p role="alert" className="mono text-[10px] font-bold text-pink sm:text-[11px]">
+            SIGN-IN DIDN&apos;T FINISH
+          </p>
+        )}
+        <button
+          type="button"
+          onClick={signIn}
+          className="rounded-full bg-foreground px-4 py-2 text-[12px] font-extrabold text-background transition-colors hover:bg-pink"
+        >
+          {authError ? "Try again" : "Sign in"}
+        </button>
+      </div>
     );
   }
 

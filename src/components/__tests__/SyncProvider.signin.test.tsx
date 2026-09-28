@@ -44,9 +44,9 @@ describe("SyncProvider sign-in", () => {
     await press("sign in");
     const opts = h.oauth.mock.calls[0][0] as { provider: string; options: { redirectTo: string } };
     expect(opts.provider).toBe("google");
-    const redirect = new URL(opts.options.redirectTo);
-    expect(redirect.pathname).toBe("/auth/callback");
-    expect(redirect.searchParams.get("next")).toBe("/media/42?tab=cast");
+    // The callback URL stays exact so it matches Supabase's redirect allow-list.
+    expect(opts.options.redirectTo).toBe(`${window.location.origin}/auth/callback`);
+    expect(document.cookie).toContain(`animood-auth-next=${encodeURIComponent("/media/42?tab=cast")}`);
   });
 
   it("reports a failed sign-in start instead of doing nothing", async () => {

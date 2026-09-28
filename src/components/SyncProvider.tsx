@@ -6,6 +6,7 @@ import { setListAccount } from "@/lib/list/reactive";
 import { getProfileByUserId } from "@/lib/profile/queries";
 import { startListSync, type SyncStatus } from "@/lib/sync/session";
 import { startPreferencesSync } from "@/lib/sync/preferences";
+import { AUTH_NEXT_COOKIE } from "@/lib/auth/redirect";
 
 /** One indicator for list + preference sync. A "local" preference session (feature
  * not deployed) defers to the list; otherwise any error, then any activity, wins. */
@@ -130,9 +131,12 @@ export function SyncProvider({ children }: { children: React.ReactNode }) {
   function signIn() {
     if (!configured) return;
     setAuthError(false);
-    // Bring the user back to the page they signed in from.
+    // Bring the user back to the page they signed in from. Kept in a short-lived
+    // cookie, not the callback URL, so the URL still matches Supabase's
+    // redirect allow-list exactly.
     const next = `${window.location.pathname}${window.location.search}`;
-    const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
+    document.cookie = `${AUTH_NEXT_COOKIE}=${encodeURIComponent(next)}; path=/; max-age=600; samesite=lax`;
+    const redirectTo = `${window.location.origin}/auth/callback`;
     void (async () => {
       try {
         const { error } = await supabaseBrowser().auth.signInWithOAuth({ provider: "google", options: { redirectTo } });

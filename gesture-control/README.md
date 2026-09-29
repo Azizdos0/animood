@@ -1,62 +1,47 @@
-# Gesture Control
+# Hand-Gesture Computer Control
 
-Control your Windows PC with your hands through a webcam: media remote, slide
-clicker, app launcher and air drawing. Built with OpenCV + MediaPipe.
+Control your Windows PC with a webcam: media remote, presentation clicker, app launcher and air drawing.
+Built with OpenCV, MediaPipe Hand Landmarker, PyAutoGUI and Tkinter.
 
-## Setup
+## Run
+
 ```
-cd gesture-control
-python -m venv .venv && .venv\Scripts\activate
 pip install -r requirements.txt
 python main.py
 ```
-Use Python 3.9-3.12 (MediaPipe does not support newer versions yet).
 
-## How it works
-**Left hand picks the mode** (hold the finger count for about 0.6 s):
+First run downloads the ~8 MB hand model (`hand_landmarker.task`).
 
-| Left hand | Mode |
-|---|---|
-| 1 finger | APPS |
-| 2 fingers | MEDIA |
-| 3 fingers | SLIDES |
-| 4 fingers | DRAW |
-| Fist | LOCKED (nothing triggers) |
+## Two hands
 
-**Right hand does the action:**
+**Left hand picks the mode** (finger count): 1 = APPS, 2 = MEDIA, 3 = SLIDES, 4 = DRAW, 5 = MOUSE,
+fist (held 1 s) = LOCKED. Show a count once to open that mode (it stays after you lower your hand);
+show the same count again to lock.
+**Right hand acts:**
 
-| Mode | Gesture | Action |
-|---|---|---|
-| APPS | Hold 1-5 fingers up for 1 s | Opens the app in that slot |
-| MEDIA | Swipe right / left | Next / previous track |
-| MEDIA | Open palm, held still | Play / pause |
-| MEDIA | Thumb up / down (other fingers folded) | Volume up / down |
-| SLIDES | Swipe right / left | Next / previous slide |
-| DRAW | Index finger only | Draw |
-| DRAW | Pinch | Lift the pen |
-| DRAW | Hold open palm | Clear the canvas |
+| Mode | Right-hand gesture |
+|------|--------------------|
+| APPS | hold 1-5 fingers ~1 s to open that slot |
+| MEDIA | swipe right/left = next/previous track, still open palm = play/pause, thumb up/down = volume |
+| SLIDES | swipe right = next, left = previous |
+| DRAW | index finger draws, touch a colour swatch (or press 1-7) to change colour / eraser, pinch lifts the pen, held open palm clears |
+| MOUSE | point = move cursor, pinch + release = click, pinch + move = drag, pinch + hold still = right click, two fingers up/down = scroll |
 
-**Keyboard** (click the camera window first): `A M S D` pick a mode, `L` locks,
-`C` opens the app settings, `X` clears the drawing, `P` saves it to `drawings/`, `Q` quits.
+Keys: `A M S D O` set a mode, `L` lock, `C` settings, `H` hide the side panel, `X` clear, `P` save drawing PNG, `Q`/`Esc` quit.
+
+## Interface
+The camera window has a HUD (`ui.py`): a mode bar with the active mode highlighted, live hand skeletons tagged
+Left/Right with finger counts, a side card listing the gestures for the current mode (or your app slots),
+a progress ring around your palm while a hold gesture charges, and toast messages for every action.
+Text is rendered with Segoe UI through Pillow and cached, so the HUD costs about 4-10 ms per frame.
 
 ## Choosing your 5 apps
-Press `C` in the camera window, or run `python main.py --settings`. For each
-finger count, pick a program with **Browse...** (an `.exe`, a shortcut, any
-file) or type a URL such as `https://youtube.com`. **Test** opens it without
-gestures; **Save** stores the choice in `config.json`.
+Press `C` (or run `python settings_ui.py`). Each slot takes an exe, shortcut, file or URL; **Test** opens it.
+Saved to `config.json` (gitignored).
 
-`config.json` also has `camera_index` (try 1 if the wrong camera opens) and
-`hold_seconds` (0.3-5, how long to hold a finger count before an app opens).
+## Tuning
+Thresholds are at the top of `gestures.py` (`SWIPE_DISTANCE`, `PINCH_RATIO`, ...) and the `HOLD_*` constants in `main.py`.
+If left/right are reversed, tick "Swap hands" in settings.
 
 ## Tests
-```
-pip install pytest
-python -m pytest
-```
-Covers finger counting, swipes, hold timing and config. The camera and window
-code has to be tried by hand on a real webcam.
-
-## Tips
-- Good front light and a plain background help a lot.
-- Keep your hands about an arm's length from the camera, palms facing it.
-- If swipes fire too easily or not enough, adjust `SwipeDetector` in `gestures.py`.
+`python -m pytest` covers the pure logic (finger counting, thumb direction, pinch, holds, swipes, smoothing, config).

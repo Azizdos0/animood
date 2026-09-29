@@ -1,43 +1,65 @@
-"""Things the gestures actually do: launch apps and press media/slide keys."""
+"""OS-level actions: key presses and launching apps."""
 import os
-import subprocess
-import sys
-import webbrowser
+
+import pyautogui
+
+pyautogui.FAILSAFE = False
+pyautogui.PAUSE = 0
 
 
-def launch(path):
-    """Open an app, file, shortcut or URL. Returns (ok, message)."""
-    path = (path or "").strip()
-    if not path:
-        return False, "slot not set (press C)"
+def enable_dpi_awareness():
+    """Render crisp windows on high-DPI screens instead of blurry upscaling."""
     try:
-        if path.lower().startswith(("http://", "https://")):
-            webbrowser.open(path)
-        else:
-            path = os.path.expandvars(os.path.expanduser(path))
-            if sys.platform.startswith("win"):
-                os.startfile(path)  # noqa: S606 - user-chosen path, by design
-            elif sys.platform == "darwin":
-                subprocess.Popen(["open", path])
-            else:
-                subprocess.Popen(["xdg-open", path])
-        return True, "opened"
-    except Exception as exc:  # bad path, no permission, ...
-        return False, f"failed: {exc}"
+        import ctypes
+        ctypes.windll.shcore.SetProcessDpiAwareness(1)
+    except (AttributeError, OSError):
+        pass
 
 
 def press(key):
-    """Press a keyboard key (PyAutoGUI names: 'playpause', 'right', ...)."""
-    import pyautogui  # imported lazily so tests/settings don't need it
-
     pyautogui.press(key)
 
 
-MEDIA_KEYS = {
-    "play_pause": "playpause",
-    "next": "nexttrack",
-    "previous": "prevtrack",
-    "volume_up": "volumeup",
-    "volume_down": "volumedown",
+def screen_size():
+    return tuple(pyautogui.size())
+
+
+def mouse(events):
+    """Apply MouseLogic events to the real cursor."""
+    for e in events:
+        kind = e[0]
+        if kind == "move":
+            pyautogui.moveTo(e[1], e[2])
+        elif kind == "click":
+            pyautogui.click()
+        elif kind == "down":
+            pyautogui.mouseDown()
+        elif kind == "up":
+            pyautogui.mouseUp()
+        elif kind == "right_click":
+            pyautogui.rightClick()
+        elif kind == "scroll":
+            pyautogui.scroll(e[1])
+
+
+def launch(target):
+    """Open an exe, shortcut, file or URL. Returns (ok, message)."""
+    target = (target or "").strip().strip('"')
+    if not target:
+        return False, "empty slot"
+    try:
+        os.startfile(target)  # ShellExecute: exe, lnk, file, URL, or PATH name like calc.exe
+        return True, "opened"
+    except OSError as e:
+        return False, str(e)
+
+
+ACTIONS = {
+    "next_track": lambda: press("nexttrack"),
+    "prev_track": lambda: press("prevtrack"),
+    "play_pause": lambda: press("playpause"),
+    "volume_up": lambda: press("volumeup"),
+    "volume_down": lambda: press("volumedown"),
+    "slide_next": lambda: press("right"),
+    "slide_prev": lambda: press("left"),
 }
-SLIDE_KEYS = {"next": "right", "previous": "left"}

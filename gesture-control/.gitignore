@@ -1,4 +1,5 @@
 config.json
+hand_landmarker.task
+drawing_*.png
 __pycache__/
-*.pyc
-drawings/
+.pytest_cache/
